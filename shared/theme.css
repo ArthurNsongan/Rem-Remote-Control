@@ -1,0 +1,146 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 258 60% 4%;
+    --foreground: 270 30% 96%;
+
+    --card: 260 50% 8%;
+    --card-foreground: 270 30% 96%;
+
+    --primary: 270 91% 65%;
+    --primary-foreground: 270 30% 98%;
+
+    --secondary: 265 40% 16%;
+    --secondary-foreground: 270 30% 96%;
+
+    --muted: 265 30% 14%;
+    --muted-foreground: 265 15% 65%;
+
+    --accent: 285 90% 66%;
+    --accent-foreground: 270 30% 98%;
+
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 270 40% 30%;
+    --input: 270 40% 24%;
+    --ring: 270 91% 65%;
+
+    --radius: 1rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+    background-image:
+      radial-gradient(60% 50% at 15% 0%, hsl(270 90% 30% / 0.35) 0%, transparent 60%),
+      radial-gradient(50% 50% at 100% 10%, hsl(290 90% 40% / 0.28) 0%, transparent 55%),
+      radial-gradient(70% 60% at 50% 110%, hsl(255 90% 35% / 0.35) 0%, transparent 60%);
+    background-attachment: fixed;
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3,
+  .font-display {
+    font-family: "Michroma", sans-serif;
+    letter-spacing: 0.02em;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply border border-white/10 bg-white/[0.04] backdrop-blur-2xl;
+    box-shadow:
+      inset 0 1px 0 0 hsl(0 0% 100% / 0.06),
+      0 24px 60px -20px hsl(270 90% 30% / 0.5);
+  }
+
+  .glass-panel {
+    @apply glass rounded-2xl;
+  }
+
+  .glass-strong {
+    @apply border border-white/15 bg-white/[0.07] backdrop-blur-2xl;
+    box-shadow:
+      inset 0 1px 0 0 hsl(0 0% 100% / 0.08),
+      0 30px 80px -24px hsl(270 90% 35% / 0.6);
+  }
+
+  .glow-text {
+    text-shadow: 0 0 18px hsl(270 91% 65% / 0.55);
+  }
+
+  .grid-overlay {
+    background-image:
+      linear-gradient(hsl(270 90% 60% / 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(270 90% 60% / 0.06) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+}
+
+/* video v2 */
+.video-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 1rem;
+  overflow: hidden;
+  background: #000;
+  touch-action: none;
+  user-select: none;
+}
+.video-wrap.fs {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+  aspect-ratio: auto;
+  z-index: 60;
+}
+.tap-ring {
+  position: absolute;
+  width: 2.6rem;
+  height: 2.6rem;
+  margin: -1.3rem 0 0 -1.3rem;
+  border: 2px solid hsl(var(--primary));
+  border-radius: 9999px;
+  pointer-events: none;
+  opacity: 0;
+}
+.tap-ring.ring-go {
+  animation: tapring 0.45s ease-out;
+}
+@keyframes tapring {
+  0% { opacity: 0.9; transform: scale(0.4); }
+  100% { opacity: 0; transform: scale(1.3); }
+}
+
+/* hide scrollbars on touch control surfaces */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.touch-none {
+  touch-action: none;
+}
