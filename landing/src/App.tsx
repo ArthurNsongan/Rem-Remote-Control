@@ -21,8 +21,7 @@ import { cn } from "@shared/cn";
 import { useLang, type Key } from "./i18n";
 
 const VERSION = "0.1.0";
-const GITHUB_URL =
-  "https://github.com/ArthurNsongan/Rem---Remote-Laptop-Control---PC---Tablet---Phone";
+const GITHUB_URL = "https://github.com/ArthurNsongan/Rem-Remote-Control";
 // URL stable : pointe toujours vers le .msi de la dernière Release GitHub.
 const DOWNLOAD_URL = `${GITHUB_URL}/releases/latest/download/Rem_0.1.0_x64_en-US.msi`;
 
