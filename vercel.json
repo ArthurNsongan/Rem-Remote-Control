@@ -1,0 +1,16 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pnpm landing:build",
+  "outputDirectory": "landing/dist",
+  "installCommand": "pnpm install",
+  "framework": null,
+  "headers": [
+    {
+      "source": "/(.*)\\.msi",
+      "headers": [
+        { "key": "Content-Type", "value": "application/x-msi" },
+        { "key": "Content-Disposition", "value": "attachment" }
+      ]
+    }
+  ]
+}
