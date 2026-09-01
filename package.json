@@ -9,7 +9,9 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "web:dev": "vite --config web/vite.config.ts",
-    "web:build": "vite build --config web/vite.config.ts"
+    "web:build": "vite build --config web/vite.config.ts",
+    "landing:dev": "vite --config landing/vite.config.ts",
+    "landing:build": "vite build --config landing/vite.config.ts"
   },
   "dependencies": {
     "react": "^19.1.0",

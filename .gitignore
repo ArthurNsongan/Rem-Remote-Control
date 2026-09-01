@@ -29,3 +29,6 @@ web/dist/
 *.njsproj
 *.sln
 *.sw?
+
+# Setup binaire (copié au build/déploiement, pas versionné)
+landing/public/*.msi

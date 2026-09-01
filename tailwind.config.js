@@ -6,6 +6,8 @@ export default {
     "./web/index.html",
     "./src/**/*.{ts,tsx}",
     "./web/src/**/*.{ts,tsx}",
+    "./landing/index.html",
+    "./landing/src/**/*.{ts,tsx}",
     "./shared/**/*.{ts,tsx}",
   ],
   theme: {
