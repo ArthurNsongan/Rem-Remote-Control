@@ -1,6 +1,6 @@
 [package]
 name = "rem-app"
-version = "0.1.3"
+version = "0.1.4"
 description = "A Tauri App"
 authors = ["you"]
 edition = "2021"
@@ -30,7 +30,7 @@ rand = "0.8"
 rust-embed = "8"
 mime_guess = "2"
 futures-util = "0.3"
-xcap = "0.9"
+xcap = "0.4"
 image = { version = "0.25", default-features = false, features = ["jpeg"] }
 
 
