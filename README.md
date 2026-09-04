@@ -80,21 +80,29 @@ Mirroring d'écran, transfert de fichiers, comptes/cloud. Cible Windows en prior
 
 | | Windows | Linux | macOS |
 |---|---|---|---|
-| Souris / clavier / média | ✅ | ✅ (X11) | ✅ |
-| Partage d'écran | ✅ | ✅ (X11) | ✅ |
+| Souris / clavier / média | ✅ | ✅ X11 + Wayland | ✅ |
+| Partage d'écran | ✅ | ✅ X11 + Wayland | ✅ |
 | Caméra | ✅ MSMF | ✅ V4L2 | ✅ AVFoundation |
 | Audio système + micro | ✅ WASAPI | ✅ `parec` (PulseAudio/PipeWire) | ❌ (pilote tiers requis) |
 | Système (verrou/veille/arrêt) | ✅ | ✅ `loginctl`/`systemctl` | ✅ `pmset` |
 
-**Linux — dépendances runtime :** `pulseaudio-utils` (commande `parec`, pour l'audio) et
-`libxdo3` (souris/clavier). Elles sont déclarées dans le `.deb`.
+**Linux — X11 et Wayland.** Les entrées passent par `x11rb` (X11), les protocoles
+`wlr-virtual-pointer/keyboard` (Sway, Hyprland) ou **libei** via le portail XDG
+RemoteDesktop (GNOME 45+, KDE). La capture d'écran utilise PipeWire + portail sous
+Wayland, XCB sous X11. Sous Wayland, le système demande une autorisation au premier
+partage d'écran ou contrôle — c'est normal et voulu.
+
+**Linux — dépendances runtime :** `pulseaudio-utils` (commande `parec`, pour l'audio)
+et `libpipewire-0.3-0`, déclarées dans le `.deb`. Binaires construits sur Ubuntu 24.04
+(glibc 2.39) : pour une distro plus ancienne, compile depuis les sources.
 
 **Linux — dépendances de build :**
 
 ```bash
 sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev \
-  librsvg2-dev patchelf build-essential curl wget file libssl-dev \
-  libxdo-dev libv4l-dev libxcb1-dev libxrandr-dev libdbus-1-dev
+  librsvg2-dev patchelf build-essential curl wget file libssl-dev pkg-config \
+  libv4l-dev libxcb1-dev libxrandr-dev libdbus-1-dev \
+  clang libclang-dev libpipewire-0.3-dev libspa-0.2-dev libwayland-dev
 ```
 
 ## Publier une version (Windows + Linux + macOS)
