@@ -12,7 +12,7 @@ pub fn available() -> bool {
 fn primary() -> Result<Monitor, String> {
     let mons = Monitor::all().map_err(|e| format!("monitors: {e}"))?;
     mons.iter()
-        .find(|m| m.is_primary())
+        .find(|m| m.is_primary().unwrap_or(false))
         .cloned()
         .or_else(|| mons.into_iter().next())
         .ok_or_else(|| "no monitor".to_string())
