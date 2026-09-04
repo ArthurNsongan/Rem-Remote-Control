@@ -1,0 +1,96 @@
+name: Release
+
+# Build Rem pour Windows, Linux et macOS, puis attache les installeurs
+# à une Release GitHub (brouillon, à publier manuellement).
+#
+# Déclenchement : push d'un tag `v*` (ex. v0.1.0) ou manuellement.
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-latest
+            args: ''
+            label: Windows (.msi)
+          - platform: ubuntu-22.04
+            args: ''
+            label: Linux (.deb / .AppImage)
+          - platform: macos-latest
+            args: '--target aarch64-apple-darwin'
+            label: macOS Apple Silicon (.dmg)
+          - platform: macos-13
+            args: '--target x86_64-apple-darwin'
+            label: macOS Intel (.dmg)
+
+    name: ${{ matrix.label }}
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ startsWith(matrix.platform, 'macos') && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: Cache Rust
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+          key: ${{ matrix.platform }}
+
+      # Dépendances système Linux : WebKitGTK (Tauri), appindicator (tray),
+      # xdo (enigo), v4l (caméra), xcb/xrandr/dbus (capture écran).
+      - name: Dépendances Linux
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev patchelf \
+            build-essential curl wget file libssl-dev \
+            libxdo-dev libv4l-dev \
+            libxcb1-dev libxrandr-dev libdbus-1-dev
+
+      - name: Install JS deps
+        run: pnpm install
+
+      - name: Build + bundle (tauri)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Rem __VERSION__'
+          releaseBody: |
+            Contrôle ton PC depuis ton téléphone, ta tablette ou un autre ordinateur — sur ton réseau local.
+
+            **Téléchargements**
+            - Windows : `.msi`
+            - Linux : `.deb` (Debian/Ubuntu) ou `.AppImage` (universel)
+            - macOS : `.dmg` (Apple Silicon et Intel)
+
+            > Linux : l'écoute audio nécessite `pulseaudio-utils` (commande `parec`).
+            > macOS : binaire non signé — clic droit → Ouvrir au premier lancement.
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}

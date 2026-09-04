@@ -8,14 +8,14 @@ export const dict = {
     nav_how: "Comment ça marche",
     nav_github: "GitHub",
     download: "Télécharger",
-    download_win: "Télécharger pour Windows",
-    download_sub: "Installeur MSI · Windows 10/11 · 64-bit",
+    download_all: "Télécharger",
+    download_sub: "Windows · Linux · macOS — gratuit, sans inscription",
 
     hero_badge: "Contrôle à distance · réseau local",
     hero_title: "Ton PC, au bout des doigts.",
     hero_sub:
       "Contrôle ton ordinateur depuis ton téléphone, ta tablette ou un autre PC — souris, clavier, média, écran, caméra et audio. Tout reste sur ton réseau local.",
-    hero_platform: "Version {v} · aucune inscription · 100 % LAN",
+    hero_platform: "Version {v} · 100 % réseau local",
     hero_secondary: "Voir le code",
 
     features_title: "Tout pour piloter ta machine",
@@ -50,21 +50,21 @@ export const dict = {
 
     footer_tag: "Contrôle à distance local. Rien ne quitte ton réseau.",
     footer_rights: "Tous droits réservés.",
-    footer_made: "Conçu pour Windows · Tauri + React + Rust",
+    footer_made: "Windows · Linux · macOS — Tauri + React + Rust",
   },
   en: {
     nav_features: "Features",
     nav_how: "How it works",
     nav_github: "GitHub",
     download: "Download",
-    download_win: "Download for Windows",
-    download_sub: "MSI installer · Windows 10/11 · 64-bit",
+    download_all: "Download",
+    download_sub: "Windows · Linux · macOS — free, no sign-up",
 
     hero_badge: "Remote control · local network",
     hero_title: "Your PC, at your fingertips.",
     hero_sub:
       "Control your computer from your phone, tablet or another PC — mouse, keyboard, media, screen, camera and audio. Everything stays on your local network.",
-    hero_platform: "Version {v} · no sign-up · 100% LAN",
+    hero_platform: "Version {v} · 100% local network",
     hero_secondary: "View the code",
 
     features_title: "Everything to drive your machine",
@@ -99,7 +99,7 @@ export const dict = {
 
     footer_tag: "Local remote control. Nothing leaves your network.",
     footer_rights: "All rights reserved.",
-    footer_made: "Built for Windows · Tauri + React + Rust",
+    footer_made: "Windows · Linux · macOS — Tauri + React + Rust",
   },
 } as const;
 

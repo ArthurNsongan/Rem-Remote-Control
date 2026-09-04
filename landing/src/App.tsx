@@ -22,8 +22,8 @@ import { useLang, type Key } from "./i18n";
 
 const VERSION = "0.1.0";
 const GITHUB_URL = "https://github.com/ArthurNsongan/Rem-Remote-Control";
-// URL stable : pointe toujours vers le .msi de la dernière Release GitHub.
-const DOWNLOAD_URL = `${GITHUB_URL}/releases/latest/download/Rem_0.1.0_x64_en-US.msi`;
+// Page de la dernière Release : Windows (.msi), Linux (.deb/.AppImage), macOS (.dmg).
+const DOWNLOAD_URL = `${GITHUB_URL}/releases/latest`;
 
 function Backdrop() {
   return (
@@ -121,9 +121,9 @@ export default function App() {
 
         <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button asChild size="lg" className="w-full sm:w-auto">
-            <a href={DOWNLOAD_URL} download>
+            <a href={DOWNLOAD_URL} target="_blank" rel="noreferrer">
               <Download />
-              {t("download_win")}
+              {t("download_all")}
             </a>
           </Button>
           <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
@@ -207,9 +207,9 @@ export default function App() {
           <h2 className="text-2xl glow-text">{t("download")}</h2>
           <p className="text-sm text-muted-foreground">{t("download_sub")}</p>
           <Button asChild size="lg">
-            <a href={DOWNLOAD_URL} download>
+            <a href={DOWNLOAD_URL} target="_blank" rel="noreferrer">
               <Download />
-              {t("download_win")}
+              {t("download_all")}
             </a>
           </Button>
         </div>

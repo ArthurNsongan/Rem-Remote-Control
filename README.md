@@ -75,3 +75,39 @@ pnpm tauri build    # exécutable + installeur Windows
 
 Mirroring d'écran, transfert de fichiers, comptes/cloud. Cible Windows en priorité
 (des fallbacks macOS/Linux best-effort existent pour les actions système).
+
+## Plateformes
+
+| | Windows | Linux | macOS |
+|---|---|---|---|
+| Souris / clavier / média | ✅ | ✅ (X11) | ✅ |
+| Partage d'écran | ✅ | ✅ (X11) | ✅ |
+| Caméra | ✅ MSMF | ✅ V4L2 | ✅ AVFoundation |
+| Audio système + micro | ✅ WASAPI | ✅ `parec` (PulseAudio/PipeWire) | ❌ (pilote tiers requis) |
+| Système (verrou/veille/arrêt) | ✅ | ✅ `loginctl`/`systemctl` | ✅ `pmset` |
+
+**Linux — dépendances runtime :** `pulseaudio-utils` (commande `parec`, pour l'audio) et
+`libxdo3` (souris/clavier). Elles sont déclarées dans le `.deb`.
+
+**Linux — dépendances de build :**
+
+```bash
+sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev \
+  librsvg2-dev patchelf build-essential curl wget file libssl-dev \
+  libxdo-dev libv4l-dev libxcb1-dev libxrandr-dev libdbus-1-dev
+```
+
+## Publier une version (Windows + Linux + macOS)
+
+Les installeurs sont construits par GitHub Actions ([.github/workflows/release.yml](.github/workflows/release.yml)) :
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+Le workflow compile sur les 4 runners (Windows, Ubuntu, macOS ARM, macOS Intel) et crée
+une **Release en brouillon** avec `.msi`, `.deb`, `.AppImage` et `.dmg`. Il ne reste qu'à
+la publier depuis l'onglet Releases.
+
+> macOS : les binaires ne sont pas signés — au premier lancement, clic droit → *Ouvrir*.

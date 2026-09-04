@@ -1,0 +1,19 @@
+# Seule la landing (landing/) + shared/ + configs racine sont nécessaires.
+# Chemins ancrés à la racine (/) pour NE PAS exclure landing/src par erreur.
+
+# App desktop / backend Rust — inutile pour la landing
+/src/
+/src-tauri/
+/web/
+
+# Dépendances & builds (Vercel réinstalle + rebuild)
+node_modules/
+/dist/
+landing/dist/
+**/*.msi
+
+# Python standalone, divers
+*.py
+__pycache__/
+.git/
+.vscode/

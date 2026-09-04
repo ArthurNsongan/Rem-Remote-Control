@@ -32,3 +32,5 @@ web/dist/
 
 # Setup binaire (copié au build/déploiement, pas versionné)
 landing/public/*.msi
+
+.vercel
