@@ -1,0 +1,66 @@
+name: CI
+
+# Validation rapide : compile + LINK l'app sur les 3 OS, sans bundler ni créer
+# de Release. Sert à valider les dépendances système (les erreurs d'édition de
+# liens n'apparaissent qu'ici, pas avec `cargo check`).
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: ubuntu-24.04
+            label: Linux
+          - platform: windows-latest
+            label: Windows
+          - platform: macos-latest
+            label: macOS
+
+    name: Vérif ${{ matrix.label }}
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+          key: ci-${{ matrix.platform }}
+
+      - name: Dépendances Linux
+        if: runner.os == 'Linux'
+        uses: ./.github/actions/linux-deps
+
+      - name: Install JS deps
+        run: pnpm install
+
+      # Les frontends sont embarqués à la compilation (generate_context! + rust-embed)
+      - name: Build frontends
+        run: pnpm web:build && pnpm build
+
+      # `build` et non `check` : c'est l'édition de liens qui révèle les libs manquantes
+      - name: Compile + link (debug)
+        run: cargo build --manifest-path src-tauri/Cargo.toml

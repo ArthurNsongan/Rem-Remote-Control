@@ -60,18 +60,8 @@ jobs:
       # Dépendances système Linux : WebKitGTK (Tauri), appindicator (tray),
       # xdo (enigo), v4l (caméra), xcb/xrandr/dbus (capture écran).
       - name: Dépendances Linux
-        if: matrix.platform == 'ubuntu-24.04'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev \
-            libayatana-appindicator3-dev \
-            librsvg2-dev patchelf \
-            build-essential curl wget file libssl-dev pkg-config \
-            libv4l-dev libxcb1-dev libxrandr-dev libdbus-1-dev \
-            clang libclang-dev libpipewire-0.3-dev libspa-0.2-dev \
-            libwayland-dev \
-            libgbm-dev libegl-dev libdrm-dev libxkbcommon-dev
+        if: runner.os == 'Linux'
+        uses: ./.github/actions/linux-deps
 
       - name: Install JS deps
         run: pnpm install
