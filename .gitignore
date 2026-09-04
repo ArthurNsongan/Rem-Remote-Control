@@ -34,3 +34,4 @@ web/dist/
 landing/public/*.msi
 
 .vercel
+src-tauri/*.bak
