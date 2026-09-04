@@ -69,7 +69,9 @@ jobs:
             librsvg2-dev patchelf \
             build-essential curl wget file libssl-dev \
             libxdo-dev libv4l-dev \
-            libxcb1-dev libxrandr-dev libdbus-1-dev
+            libxcb1-dev libxrandr-dev libdbus-1-dev \
+            pkg-config clang libclang-dev \
+            libpipewire-0.3-dev libspa-0.2-dev
 
       - name: Install JS deps
         run: pnpm install
