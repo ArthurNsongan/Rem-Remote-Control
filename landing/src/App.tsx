@@ -20,7 +20,7 @@ import { Badge } from "@shared/ui/badge";
 import { cn } from "@shared/cn";
 import { useLang, type Key } from "./i18n";
 
-const VERSION = "0.1.6";
+const VERSION = "0.1.7";
 const GITHUB_URL = "https://github.com/ArthurNsongan/Rem-Remote-Control";
 // Page de la dernière Release : Windows (.msi), Linux (.deb/.AppImage), macOS (.dmg).
 const DOWNLOAD_URL = `${GITHUB_URL}/releases/latest`;
