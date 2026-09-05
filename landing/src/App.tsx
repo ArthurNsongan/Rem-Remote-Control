@@ -13,17 +13,29 @@ import {
   Wifi,
   QrCode,
   Hand,
+  AppWindow,
+  Command,
+  Terminal,
 } from "lucide-react";
 import { Button } from "@shared/ui/button";
 import { Card, CardContent } from "@shared/ui/card";
 import { Badge } from "@shared/ui/badge";
 import { cn } from "@shared/cn";
 import { useLang, type Key } from "./i18n";
+import { useLatestRelease, GITHUB_URL, RELEASES_URL } from "./useRelease";
 
-const VERSION = "0.1.7";
-const GITHUB_URL = "https://github.com/ArthurNsongan/Rem-Remote-Control";
-// Page de la dernière Release : Windows (.msi), Linux (.deb/.AppImage), macOS (.dmg).
-const DOWNLOAD_URL = `${GITHUB_URL}/releases/latest`;
+type OS = "win" | "mac" | "linux";
+
+/** OS du visiteur, pour mettre en avant le bon bouton (null sur mobile). */
+function detectOS(): OS | null {
+  if (typeof navigator === "undefined") return null;
+  const ua = navigator.userAgent;
+  if (/Android|iPhone|iPad|iPod/i.test(ua)) return null; // pas installable
+  if (/Win/i.test(ua)) return "win";
+  if (/Mac/i.test(ua)) return "mac";
+  if (/Linux|X11/i.test(ua)) return "linux";
+  return null;
+}
 
 function Backdrop() {
   return (
@@ -38,6 +50,15 @@ function Backdrop() {
 
 export default function App() {
   const { lang, setLang, t } = useLang();
+  const os = detectOS();
+  // Liens résolus au chargement via l'API GitHub : aucun nom de fichier codé en dur.
+  const rel = useLatestRelease();
+
+  const downloads: { os: OS; label: Key; ext: string; href: string; icon: React.ReactNode }[] = [
+    { os: "win", label: "dl_windows", ext: ".msi", href: rel.win, icon: <AppWindow /> },
+    { os: "mac", label: "dl_macos", ext: ".dmg · Intel + Apple Silicon", href: rel.mac, icon: <Command /> },
+    { os: "linux", label: "dl_linux", ext: ".AppImage", href: rel.linux, icon: <Terminal /> },
+  ];
 
   const features: { icon: React.ReactNode; t: Key; d: Key }[] = [
     { icon: <MousePointer2 />, t: "f_touchpad_t", d: "f_touchpad_d" },
@@ -119,22 +140,55 @@ export default function App() {
           {t("hero_sub")}
         </p>
 
-        <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Button asChild size="lg" className="w-full sm:w-auto">
-            <a href={DOWNLOAD_URL} target="_blank" rel="noreferrer">
-              <Download />
-              {t("download_all")}
-            </a>
-          </Button>
-          <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
-            <a href={GITHUB_URL} target="_blank" rel="noreferrer">
-              <Github />
-              {t("hero_secondary")}
-            </a>
-          </Button>
+        <div className="mt-9 grid gap-3 sm:grid-cols-3">
+          {downloads.map((d) => (
+            <Button
+              key={d.os}
+              asChild
+              size="lg"
+              variant={os === d.os ? "default" : "glass"}
+              className="w-full"
+            >
+              <a href={d.href} target="_blank" rel="noreferrer">
+                {d.icon}
+                <span className="flex flex-col items-start leading-tight">
+                  <span>{t(d.label)}</span>
+                  <span className="text-[10px] font-normal opacity-70">
+                    {d.ext}
+                    {os === d.os ? ` · ${t("dl_detected")}` : ""}
+                  </span>
+                </span>
+              </a>
+            </Button>
+          ))}
         </div>
-        <p className="mt-4 font-accent text-xs tracking-wide text-muted-foreground">
-          {t("download_sub")} · {t("hero_platform", { v: VERSION })}
+
+        <p className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 font-accent text-xs tracking-wide text-muted-foreground">
+          <a href={rel.deb} target="_blank" rel="noreferrer" className="underline-offset-4 hover:text-foreground hover:underline">
+            {t("dl_deb")}
+          </a>
+          <span aria-hidden>·</span>
+          <a
+            href={RELEASES_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="underline-offset-4 hover:text-foreground hover:underline"
+          >
+            {t("dl_all")}
+          </a>
+          <span aria-hidden>·</span>
+          <a
+            href={GITHUB_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 underline-offset-4 hover:text-foreground hover:underline"
+          >
+            <Github className="h-3.5 w-3.5" />
+            {t("hero_secondary")}
+          </a>
+        </p>
+        <p className="mt-2 font-accent text-xs tracking-wide text-muted-foreground/70">
+          {t("hero_platform", { v: rel.version ?? "—" })}
         </p>
 
         {/* mockup band */}
@@ -206,12 +260,22 @@ export default function App() {
           </div>
           <h2 className="text-2xl glow-text">{t("download")}</h2>
           <p className="text-sm text-muted-foreground">{t("download_sub")}</p>
-          <Button asChild size="lg">
-            <a href={DOWNLOAD_URL} target="_blank" rel="noreferrer">
-              <Download />
-              {t("download_all")}
-            </a>
-          </Button>
+          <div className="grid w-full max-w-2xl gap-3 sm:grid-cols-3">
+            {downloads.map((d) => (
+              <Button
+                key={d.os}
+                asChild
+                size="lg"
+                variant={os === d.os ? "default" : "glass"}
+                className="w-full"
+              >
+                <a href={d.href} target="_blank" rel="noreferrer">
+                  {d.icon}
+                  {t(d.label)}
+                </a>
+              </Button>
+            ))}
+          </div>
         </div>
       </section>
 
