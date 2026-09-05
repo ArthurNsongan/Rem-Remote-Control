@@ -25,11 +25,8 @@ jobs:
             args: ''
             label: Linux (.deb / .AppImage)
           - platform: macos-latest
-            args: '--target aarch64-apple-darwin'
-            label: macOS Apple Silicon (.dmg)
-          - platform: macos-13
-            args: '--target x86_64-apple-darwin'
-            label: macOS Intel (.dmg)
+            args: '--target universal-apple-darwin'
+            label: macOS universel Intel + Apple Silicon (.dmg)
 
     name: ${{ matrix.label }}
     runs-on: ${{ matrix.platform }}
