@@ -67,6 +67,11 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Signature des artefacts de mise a jour automatique. Sans ces deux
+          # secrets, les bundles sortent mais latest.json n'est pas signe et
+          # les clients refusent la mise a jour.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'Rem __VERSION__'
@@ -78,8 +83,15 @@ jobs:
             - Linux : `.deb` (Debian/Ubuntu) ou `.AppImage` (universel)
             - macOS : `.dmg` (Apple Silicon et Intel)
 
+            À partir de la 0.1.9, Rem se met à jour tout seul : il vérifie les
+            nouvelles versions au lancement et propose de les installer.
+
             > Linux : l'écoute audio nécessite `pulseaudio-utils` (commande `parec`).
+            > Linux : la mise à jour automatique fonctionne avec l'`.AppImage`, pas avec le `.deb` (géré par apt).
             > macOS : binaire non signé — clic droit → Ouvrir au premier lancement.
+          # Genere/complete latest.json, lu par le plugin updater des clients.
+          # Chaque job de la matrice y ajoute sa plateforme.
+          includeUpdaterJson: true
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}

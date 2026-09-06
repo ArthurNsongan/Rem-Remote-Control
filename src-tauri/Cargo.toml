@@ -1,6 +1,6 @@
 [package]
 name = "rem-app"
-version = "0.1.8"
+version = "0.1.9"
 description = "A Tauri App"
 authors = ["you"]
 edition = "2021"
@@ -32,6 +32,7 @@ mime_guess = "2"
 futures-util = "0.3"
 xcap = "0.9"
 image = { version = "0.25", default-features = false, features = ["jpeg"] }
+tauri-plugin-process = "2"
 
 
 # --- Dépendances spécifiques à la plateforme ---
@@ -51,3 +52,6 @@ nokhwa = { version = "0.10", features = ["input-v4l"] }
 [target.'cfg(target_os = "macos")'.dependencies]
 # Caméra via AVFoundation. Pas de capture audio système sur macOS (pilote tiers requis).
 nokhwa = { version = "0.10", features = ["input-avfoundation"] }
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-updater = "2"

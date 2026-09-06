@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { api, type ServerInfo, type DeviceInfo } from "./lib/tauri";
 import TitleBar from "./components/TitleBar";
+import { UpdateBanner, UpdateSettings } from "./components/Updater";
+import { useUpdater } from "./lib/updater";
 import { Card, CardContent, CardHeader, CardTitle } from "@shared/ui/card";
 import { Button } from "@shared/ui/button";
 import { Badge } from "@shared/ui/badge";
@@ -50,6 +52,7 @@ function timeAgo(unix: number) {
 }
 
 export default function App() {
+  const updater = useUpdater();
   const [info, setInfo] = useState<ServerInfo | null>(null);
   const [devices, setDevices] = useState<DeviceInfo[]>([]);
   const [busy, setBusy] = useState(false);
@@ -147,6 +150,8 @@ export default function App() {
               {running ? "En ligne" : "Hors ligne"}
             </Badge>
           </header>
+
+          <UpdateBanner up={updater} />
 
           {/* Server control */}
           <Card>
@@ -417,6 +422,9 @@ export default function App() {
                   Arrête le serveur pour changer le port
                 </p>
               )}
+            </CardContent>
+            <CardContent className="p-4 pt-0">
+              <UpdateSettings up={updater} />
             </CardContent>
           </Card>
           </div>
