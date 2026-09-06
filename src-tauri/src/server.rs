@@ -23,7 +23,7 @@ use tokio::sync::{mpsc, oneshot};
 
 use crate::input;
 use crate::protocol::{ClientMessage, ServerMessage};
-use crate::state::Shared;
+use crate::state::{PairOutcome, Shared};
 use crate::{audio, camera, video};
 
 #[derive(RustEmbed)]
@@ -132,12 +132,24 @@ pub async fn start(shared: Shared, port: u16) -> Result<(), String> {
     Ok(())
 }
 
-async fn pair(State(state): State<AppState>, Json(body): Json<PairBody>) -> Response {
-    match state.shared.verify_pin(body.pin.trim()) {
-        Some(token) => Json(json!({ "token": token })).into_response(),
-        None => (
+/// Appairage par PIN. Limité par IP : un PIN à 6 chiffres serait sinon
+/// brute-forçable en quelques minutes depuis le réseau local.
+async fn pair(
+    State(state): State<AppState>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    Json(body): Json<PairBody>,
+) -> Response {
+    match state.shared.verify_pin(addr.ip(), body.pin.trim()) {
+        PairOutcome::Ok(token) => Json(json!({ "token": token })).into_response(),
+        PairOutcome::Invalid { remaining } => (
             StatusCode::UNAUTHORIZED,
-            Json(json!({ "error": "invalid_pin" })),
+            Json(json!({ "error": "invalid_pin", "remaining": remaining })),
+        )
+            .into_response(),
+        PairOutcome::Locked { retry_after } => (
+            StatusCode::TOO_MANY_REQUESTS,
+            [(header::RETRY_AFTER, retry_after.to_string())],
+            Json(json!({ "error": "too_many_attempts", "retry_after": retry_after })),
         )
             .into_response(),
     }

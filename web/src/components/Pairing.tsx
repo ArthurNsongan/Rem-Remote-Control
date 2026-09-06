@@ -1,20 +1,29 @@
-import { useRef, useState } from "react";
-import { Activity, ShieldCheck } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Activity, ShieldCheck, Lock } from "lucide-react";
 import { Button } from "@shared/ui/button";
-import { pair } from "../lib/socket";
+import { pair, PairError } from "../lib/socket";
 
 export default function Pairing({ onPaired }: { onPaired: () => void }) {
   const [digits, setDigits] = useState<string[]>(Array(6).fill(""));
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [lock, setLock] = useState(0);
   const refs = useRef<(HTMLInputElement | null)[]>([]);
 
+  // Décompte du verrouillage anti-brute-force renvoyé par le serveur.
+  useEffect(() => {
+    if (lock <= 0) return;
+    const id = setInterval(() => setLock((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(id);
+  }, [lock > 0]);
+
   const setDigit = (i: number, v: string) => {
+    if (lock > 0) return;
     const c = v.replace(/\D/g, "").slice(-1);
     const next = [...digits];
     next[i] = c;
     setDigits(next);
-    setError(false);
+    setError(null);
     if (c && i < 5) refs.current[i + 1]?.focus();
     if (next.every((d) => d) && next.join("").length === 6) submit(next.join(""));
   };
@@ -24,12 +33,27 @@ export default function Pairing({ onPaired }: { onPaired: () => void }) {
   };
 
   const submit = async (pin: string) => {
+    if (lock > 0) return;
     setBusy(true);
     try {
       await pair(pin);
       onPaired();
-    } catch {
-      setError(true);
+    } catch (e) {
+      const err = e as PairError;
+      if (err.kind === "locked") {
+        setLock(err.retryAfter);
+        setError(null);
+      } else if (err.kind === "network") {
+        setError("Serveur injoignable");
+      } else {
+        setError(
+          err.remaining > 0
+            ? `Code incorrect — ${err.remaining} tentative${err.remaining > 1 ? "s" : ""} restante${
+                err.remaining > 1 ? "s" : ""
+              }`
+            : "Code incorrect, réessaie"
+        );
+      }
       setDigits(Array(6).fill(""));
       refs.current[0]?.focus();
     } finally {
@@ -72,26 +96,32 @@ export default function Pairing({ onPaired }: { onPaired: () => void }) {
               onKeyDown={(e) => onKeyDown(i, e)}
               inputMode="numeric"
               maxLength={1}
+              disabled={lock > 0}
               className={`aspect-square min-w-0 flex-1 rounded-xl border bg-white/[0.05] text-center font-sans text-xl font-bold backdrop-blur-xl outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/50 ${
                 error ? "border-destructive animate-pulse" : "border-white/15"
-              }`}
+              } disabled:opacity-40`}
             />
           ))}
         </div>
 
-        {error && (
-          <p className="mt-4 text-center text-sm text-destructive">
-            Code incorrect, réessaie
-          </p>
+        {error && !lock && (
+          <p className="mt-4 text-center text-sm text-destructive">{error}</p>
+        )}
+
+        {lock > 0 && (
+          <div className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-center text-sm text-destructive">
+            <Lock className="h-4 w-4 shrink-0" />
+            <span>Trop de tentatives — réessaie dans {lock}s</span>
+          </div>
         )}
 
         <Button
           className="mt-6 w-full"
           size="lg"
-          disabled={busy || digits.join("").length !== 6}
+          disabled={busy || lock > 0 || digits.join("").length !== 6}
           onClick={() => submit(digits.join(""))}
         >
-          {busy ? "Connexion…" : "Se connecter"}
+          {lock > 0 ? `Verrouillé ${lock}s` : busy ? "Connexion…" : "Se connecter"}
         </Button>
       </div>
     </div>

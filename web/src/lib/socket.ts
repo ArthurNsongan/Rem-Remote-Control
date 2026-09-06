@@ -43,13 +43,38 @@ export function clearToken() {
   localStorage.removeItem(TOKEN_KEY);
 }
 
+/** Échec d'appairage : PIN faux, ou IP verrouillée après trop de tentatives. */
+export class PairError extends Error {
+  constructor(
+    public kind: "invalid" | "locked" | "network",
+    /** Secondes avant de pouvoir réessayer (kind === "locked"). */
+    public retryAfter = 0,
+    /** Tentatives restantes avant verrouillage (kind === "invalid"). */
+    public remaining = 0
+  ) {
+    super(kind);
+  }
+}
+
 export async function pair(pin: string): Promise<string> {
-  const res = await fetch(`${httpBase()}/pair`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ pin }),
-  });
-  if (!res.ok) throw new Error("invalid_pin");
+  let res: Response;
+  try {
+    res = await fetch(`${httpBase()}/pair`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pin }),
+    });
+  } catch {
+    throw new PairError("network");
+  }
+  if (res.status === 429) {
+    const body = (await res.json().catch(() => ({}))) as { retry_after?: number };
+    throw new PairError("locked", body.retry_after ?? 60);
+  }
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as { remaining?: number };
+    throw new PairError("invalid", 0, body.remaining ?? 0);
+  }
   const data = (await res.json()) as { token: string };
   localStorage.setItem(TOKEN_KEY, data.token);
   return data.token;
