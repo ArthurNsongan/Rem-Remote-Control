@@ -4139,7 +4139,7 @@ dependencies = [
 
 [[package]]
 name = "rem-app"
-version = "0.1.9"
+version = "0.1.10"
 dependencies = [
  "axum",
  "enigo",
