@@ -89,7 +89,95 @@ fn map_key(key: SpecialKey) -> Option<Key> {
     })
 }
 
+/// Volume sous Linux : on agit sur le mixeur au lieu de simuler une touche.
+///
+/// Les touches XF86Audio* ne font rien par elles-memes : c'est l'environnement
+/// de bureau qui les intercepte. Un evenement synthetique n'est pas toujours vu
+/// par ce raccourci global - en particulier sur Wayland, ou il passe par le
+/// portail - et le keysym peut meme etre absent de la disposition active.
+/// pactl / wpctl, eux, parlent directement au serveur de son.
+#[cfg(target_os = "linux")]
+mod linux_volume {
+    use std::process::{Command, Stdio};
+    use std::sync::OnceLock;
+
+    use crate::protocol::MediaAction;
+
+    const STEP: &str = "5";
+
+    #[derive(Clone, Copy)]
+    enum Tool {
+        /// PulseAudio, et PipeWire via pipewire-pulse : le plus repandu.
+        Pactl,
+        /// PipeWire natif (wireplumber), si pactl est absent.
+        Wpctl,
+    }
+
+    fn run(bin: &str, args: &[&str]) -> bool {
+        Command::new(bin)
+            .args(args)
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status()
+            .map(|s| s.success())
+            .unwrap_or(false)
+    }
+
+    /// Detecte l'outil disponible une seule fois : sonder a chaque appui
+    /// couterait un lancement de processus par clic.
+    fn tool() -> Option<Tool> {
+        static TOOL: OnceLock<Option<Tool>> = OnceLock::new();
+        *TOOL.get_or_init(|| {
+            if run("pactl", &["--version"]) {
+                Some(Tool::Pactl)
+            } else if run("wpctl", &["--version"]) {
+                Some(Tool::Wpctl)
+            } else {
+                eprintln!("volume : ni pactl ni wpctl trouve, repli sur les touches media");
+                None
+            }
+        })
+    }
+
+    /// Applique l'action. `false` = non gerable ici, l'appelant simule la touche.
+    pub fn handle(action: MediaAction) -> bool {
+        let Some(tool) = tool() else { return false };
+        match (tool, action) {
+            (Tool::Pactl, MediaAction::VolUp) => run(
+                "pactl",
+                &["set-sink-volume", "@DEFAULT_SINK@", &format!("+{STEP}%")],
+            ),
+            (Tool::Pactl, MediaAction::VolDown) => run(
+                "pactl",
+                &["set-sink-volume", "@DEFAULT_SINK@", &format!("-{STEP}%")],
+            ),
+            (Tool::Pactl, MediaAction::Mute) => {
+                run("pactl", &["set-sink-mute", "@DEFAULT_SINK@", "toggle"])
+            }
+            (Tool::Wpctl, MediaAction::VolUp) => run(
+                "wpctl",
+                &["set-volume", "@DEFAULT_AUDIO_SINK@", &format!("{STEP}%+")],
+            ),
+            (Tool::Wpctl, MediaAction::VolDown) => run(
+                "wpctl",
+                &["set-volume", "@DEFAULT_AUDIO_SINK@", &format!("{STEP}%-")],
+            ),
+            (Tool::Wpctl, MediaAction::Mute) => {
+                run("wpctl", &["set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"])
+            }
+            // Lecture / piste suivante : ce sont des commandes MPRIS, pas du
+            // mixage. On laisse la simulation de touches s'en charger.
+            _ => false,
+        }
+    }
+}
+
 pub fn media(e: &mut Enigo, action: MediaAction) {
+    #[cfg(target_os = "linux")]
+    if linux_volume::handle(action) {
+        return;
+    }
+
     let key = match action {
         MediaAction::PlayPause => Key::MediaPlayPause,
         MediaAction::Next => Key::MediaNextTrack,
