@@ -38,6 +38,15 @@ struct AppState {
     input_tx: mpsc::UnboundedSender<ClientMessage>,
 }
 
+/// Echecs consecutifs tolerees par une boucle de capture avant abandon.
+///
+/// Quand la capture est structurellement impossible - session Wayland sans
+/// portail, binaire lance en root, camera prise par un autre programme - elle
+/// echoue a chaque image. Sans plafond, la boucle inonde le journal et occupe
+/// un cœur pour rien. On arrete le flux : le client voit la connexion se
+/// fermer, ce qui est un signal plus clair qu'une image figee.
+const MAX_CAPTURE_FAILS: u32 = 20;
+
 #[derive(Deserialize)]
 struct PairBody {
     pin: String,
@@ -262,18 +271,27 @@ async fn camera_stream(
                 return;
             }
         };
+        let mut fails = 0u32;
         loop {
             if !shared.is_running() || !shared.captures_allowed() {
                 break;
             }
             match grabber.frame() {
                 Ok(jpeg) => {
+                    fails = 0;
                     if tx.blocking_send(jpeg).is_err() {
                         break;
                     }
                 }
                 Err(e) => {
-                    eprintln!("camera frame: {e}");
+                    fails += 1;
+                    if fails == 1 {
+                        eprintln!("camera frame: {e}");
+                    }
+                    if fails >= MAX_CAPTURE_FAILS {
+                        eprintln!("camera: abandon apres {fails} echecs consecutifs");
+                        break;
+                    }
                     std::thread::sleep(std::time::Duration::from_millis(300));
                 }
             }
@@ -388,6 +406,7 @@ async fn stream(State(state): State<AppState>, Query(q): Query<HashMap<String, S
                 return;
             }
         };
+        let mut fails = 0u32;
         loop {
             if !shared.is_running() {
                 break;
@@ -398,12 +417,20 @@ async fn stream(State(state): State<AppState>, Query(q): Query<HashMap<String, S
             }
             match grabber.frame() {
                 Ok(jpeg) => {
+                    fails = 0;
                     if tx.blocking_send(jpeg).is_err() {
                         break; // client gone
                     }
                 }
                 Err(e) => {
-                    eprintln!("frame: {e}");
+                    fails += 1;
+                    if fails == 1 {
+                        eprintln!("frame: {e}");
+                    }
+                    if fails >= MAX_CAPTURE_FAILS {
+                        eprintln!("capture ecran: abandon apres {fails} echecs consecutifs");
+                        break;
+                    }
                     std::thread::sleep(std::time::Duration::from_millis(300));
                 }
             }
