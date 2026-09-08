@@ -39,6 +39,14 @@
   "bundle": {
     "active": true,
     "createUpdaterArtifacts": true,
+    "publisher": "ArthurNsongan",
+    "copyright": "Copyright 2026 ArthurNsongan",
+    "homepage": "https://rem.nade.click/",
+    "license": "PolyForm-Noncommercial-1.0.0",
+    "licenseFile": "../LICENSE.md",
+    "category": "Utility",
+    "shortDescription": "Contrôle ton PC depuis ton téléphone, ta tablette ou un autre ordinateur.",
+    "longDescription": "Rem transforme ton ordinateur en machine pilotable à distance depuis n'importe quel navigateur du réseau local : souris, clavier, média, écran tactile, caméra et audio. Appairage par code PIN, rien ne quitte ton réseau.",
     "targets": [
       "msi",
       "deb",

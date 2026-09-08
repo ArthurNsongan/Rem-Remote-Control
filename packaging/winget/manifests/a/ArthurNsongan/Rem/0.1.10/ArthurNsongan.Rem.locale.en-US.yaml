@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.6.0.schema.json
+PackageIdentifier: ArthurNsongan.Rem
+PackageVersion: 0.1.10
+PackageLocale: en-US
+Publisher: ArthurNsongan
+PublisherUrl: https://github.com/ArthurNsongan
+PublisherSupportUrl: https://github.com/ArthurNsongan/Rem-Remote-Control/issues
+PackageName: Rem
+PackageUrl: https://rem.nade.click/
+License: PolyForm Noncommercial License 1.0.0
+LicenseUrl: https://github.com/ArthurNsongan/Rem-Remote-Control/blob/main/LICENSE.md
+Copyright: Copyright 2026 ArthurNsongan
+ShortDescription: Control your PC from your phone, tablet or another computer over your local network.
+Description: |-
+  Rem turns your computer into a machine you can drive from any browser on the
+  same network: mouse and touchpad, real-time keyboard, media and volume keys,
+  a touch-to-point screen stream, plus the PC's camera, microphone and system
+  audio. Pairing uses a PIN and a QR code, and nothing leaves your local
+  network. Close the window and Rem keeps running in the system tray.
+Moniker: rem
+Tags:
+  - remote
+  - remote-control
+  - lan
+  - touchpad
+  - keyboard
+  - screen-sharing
+  - phone
+  - tablet
+ReleaseNotesUrl: https://github.com/ArthurNsongan/Rem-Remote-Control/releases/tag/v0.1.10
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0

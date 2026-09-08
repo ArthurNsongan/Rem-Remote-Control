@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.locale.1.6.0.schema.json
+PackageIdentifier: ArthurNsongan.Rem
+PackageVersion: 0.1.10
+PackageLocale: fr-FR
+Publisher: ArthurNsongan
+PublisherUrl: https://github.com/ArthurNsongan
+PublisherSupportUrl: https://github.com/ArthurNsongan/Rem-Remote-Control/issues
+PackageName: Rem
+PackageUrl: https://rem.nade.click/
+License: PolyForm Noncommercial License 1.0.0
+LicenseUrl: https://github.com/ArthurNsongan/Rem-Remote-Control/blob/main/LICENSE.md
+Copyright: Copyright 2026 ArthurNsongan
+ShortDescription: Contrôle ton PC depuis ton téléphone, ta tablette ou un autre ordinateur.
+Description: |-
+  Rem transforme ton ordinateur en machine pilotable à distance depuis
+  n'importe quel navigateur du réseau local : souris et pavé tactile, clavier
+  en temps réel, touches média et volume, partage d'écran où l'on vise au
+  doigt, ainsi que la caméra, le micro et l'audio système du PC. L'appairage
+  se fait par code PIN et QR code, et rien ne quitte ton réseau local. Ferme
+  la fenêtre : Rem continue dans la barre système.
+ReleaseNotesUrl: https://github.com/ArthurNsongan/Rem-Remote-Control/releases/tag/v0.1.10
+ManifestType: locale
+ManifestVersion: 1.6.0
