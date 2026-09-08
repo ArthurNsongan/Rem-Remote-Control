@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import type { ClientMessage, SpecialKey } from "@shared/protocol";
 import { Button } from "@shared/ui/button";
+import { useT } from "../i18n";
 
 type Send = (msg: ClientMessage) => void;
 
@@ -19,6 +20,7 @@ type Send = (msg: ClientMessage) => void;
  * to derive added text and required backspaces.
  */
 export default function LiveKeyboard({ send }: { send: Send }) {
+  const t = useT();
   const prev = useRef("");
   const taRef = useRef<HTMLTextAreaElement>(null);
   const [focused, setFocused] = useState(false);
@@ -64,9 +66,7 @@ export default function LiveKeyboard({ send }: { send: Send }) {
         <div className="mb-2 flex items-center gap-1.5 font-sans text-xs text-muted-foreground">
           <KbIcon className="h-4 w-4" />
           <span>
-            {focused
-              ? "Clavier actif · tape, ça part en direct"
-              : "Touche ici pour activer le clavier du téléphone"}
+            {focused ? t("live_on") : t("live_off")}
           </span>
           <span
             className={`ml-auto h-2 w-2 rounded-full ${
@@ -83,7 +83,7 @@ export default function LiveKeyboard({ send }: { send: Send }) {
           autoCapitalize="sentences"
           autoCorrect="on"
           className="w-full resize-none rounded-xl border border-white/15 bg-white/[0.04] px-3 py-2 text-base text-foreground outline-none placeholder:text-muted-foreground/60 focus:border-primary/50"
-          placeholder="Écris ici… (envoyé en temps réel)"
+          placeholder={t("live_placeholder")}
         />
       </div>
 

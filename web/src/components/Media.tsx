@@ -8,10 +8,12 @@ import {
 } from "lucide-react";
 import type { ClientMessage } from "@shared/protocol";
 import { Button } from "@shared/ui/button";
+import { useT } from "../i18n";
 
 type Send = (msg: ClientMessage) => void;
 
 export default function Media({ send }: { send: Send }) {
+  const t = useT();
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-center gap-4">
@@ -40,7 +42,7 @@ export default function Media({ send }: { send: Send }) {
 
       <div className="space-y-3">
         <p className="text-center font-accent text-xs tracking-widest text-muted-foreground">
-          VOLUME
+          {t("volume")}
         </p>
         <div className="grid grid-cols-3 gap-3">
           <Button

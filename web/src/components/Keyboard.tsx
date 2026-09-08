@@ -13,6 +13,7 @@ import {
 import type { ClientMessage, SpecialKey } from "@shared/protocol";
 import { Button } from "@shared/ui/button";
 import { Input } from "@shared/ui/input";
+import { useT } from "../i18n";
 
 type Send = (msg: ClientMessage) => void;
 
@@ -36,6 +37,7 @@ function KeyBtn({
 }
 
 export default function Keyboard({ send }: { send: Send }) {
+  const t = useT();
   const [text, setText] = useState("");
 
   const sendText = () => {
@@ -57,7 +59,7 @@ export default function Keyboard({ send }: { send: Send }) {
               sendText();
             }
           }}
-          placeholder="Tape du texte à envoyer…"
+          placeholder={t("kb_placeholder")}
           autoCapitalize="off"
           autoCorrect="off"
         />
@@ -72,10 +74,10 @@ export default function Keyboard({ send }: { send: Send }) {
         <KeyBtn k="backspace" icon={<Delete />} send={send} />
         <KeyBtn k="enter" icon={<CornerDownLeft />} send={send} />
 
-        <KeyBtn k="copy" label="Copier" icon={<Copy />} send={send} />
-        <KeyBtn k="paste" label="Coller" icon={<Clipboard />} send={send} />
-        <KeyBtn k="delete" label="Suppr" send={send} />
-        <KeyBtn k="space" label="Espace" send={send} />
+        <KeyBtn k="copy" label={t("key_copy")} icon={<Copy />} send={send} />
+        <KeyBtn k="paste" label={t("key_paste")} icon={<Clipboard />} send={send} />
+        <KeyBtn k="delete" label={t("key_delete")} send={send} />
+        <KeyBtn k="space" label={t("key_space")} send={send} />
       </div>
 
       <div className="grid grid-cols-3 gap-2">

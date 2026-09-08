@@ -120,6 +120,32 @@ fn get_devices(shared: State<Shared>) -> Vec<DeviceInfo> {
     shared.devices()
 }
 
+/// L'installation en cours peut-elle se remplacer elle-même ?
+///
+/// L'updater ne sait pas mettre à jour toutes les formes de distribution :
+/// - Linux : seul l'AppImage est remplaçable ; un paquet .deb appartient à apt.
+/// - macOS : remplacer le bundle invalide sa signature, et un binaire non
+///   signé ne redémarre pas sur Apple Silicon. À réactiver le jour où l'app
+///   est signée et notarisée.
+///
+/// Quand c'est faux, l'UI propose de télécharger la nouvelle version au lieu
+/// de l'installer en place.
+#[tauri::command]
+fn can_self_update() -> bool {
+    #[cfg(target_os = "linux")]
+    {
+        std::env::var_os("APPIMAGE").is_some()
+    }
+    #[cfg(target_os = "macos")]
+    {
+        false
+    }
+    #[cfg(target_os = "windows")]
+    {
+        true
+    }
+}
+
 #[tauri::command]
 fn quit(app: tauri::AppHandle) {
     app.exit(0);
@@ -187,6 +213,7 @@ pub fn run() {
             set_video,
             set_captures_allowed,
             get_devices,
+            can_self_update,
             quit,
         ])
         .run(tauri::generate_context!())

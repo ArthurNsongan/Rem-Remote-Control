@@ -13,6 +13,7 @@ import {
   Camera,
   Volume2,
   Mic,
+  Languages,
 } from "lucide-react";
 import type { ClientMessage } from "@shared/protocol";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@shared/ui/tabs";
@@ -36,6 +37,7 @@ import SystemPanel from "./components/SystemPanel";
 import VideoScreen from "./components/VideoScreen";
 import CameraView from "./components/CameraView";
 import AudioListen from "./components/AudioListen";
+import { I18nProvider, useI18n, type ClientI18n, type ClientKey } from "./i18n";
 
 type Mode = "traditional" | "custom";
 type ModuleId =
@@ -48,15 +50,15 @@ type ModuleId =
   | "media"
   | "system";
 
-const MODULES: { id: ModuleId; label: string; icon: React.ReactNode }[] = [
-  { id: "trackpad", label: "Trackpad", icon: <MousePointer2 className="h-4 w-4" /> },
-  { id: "keyboard", label: "Clavier live", icon: <KeyboardIcon className="h-4 w-4" /> },
-  { id: "video", label: "Écran", icon: <MonitorPlay className="h-4 w-4" /> },
-  { id: "camera", label: "Caméra", icon: <Camera className="h-4 w-4" /> },
-  { id: "audio_pc", label: "Audio PC", icon: <Volume2 className="h-4 w-4" /> },
-  { id: "mic", label: "Micro PC", icon: <Mic className="h-4 w-4" /> },
-  { id: "media", label: "Média", icon: <Music className="h-4 w-4" /> },
-  { id: "system", label: "Système", icon: <Power className="h-4 w-4" /> },
+const MODULES: { id: ModuleId; label: ClientKey; icon: React.ReactNode }[] = [
+  { id: "trackpad", label: "mod_trackpad", icon: <MousePointer2 className="h-4 w-4" /> },
+  { id: "keyboard", label: "mod_keyboard", icon: <KeyboardIcon className="h-4 w-4" /> },
+  { id: "video", label: "mod_video", icon: <MonitorPlay className="h-4 w-4" /> },
+  { id: "camera", label: "mod_camera", icon: <Camera className="h-4 w-4" /> },
+  { id: "audio_pc", label: "mod_audio_pc", icon: <Volume2 className="h-4 w-4" /> },
+  { id: "mic", label: "mod_mic", icon: <Mic className="h-4 w-4" /> },
+  { id: "media", label: "mod_media", icon: <Music className="h-4 w-4" /> },
+  { id: "system", label: "mod_system", icon: <Power className="h-4 w-4" /> },
 ];
 
 function loadModules(): Record<ModuleId, boolean> {
@@ -79,14 +81,31 @@ function loadModules(): Record<ModuleId, boolean> {
   return defaults;
 }
 
+/** Racine : fournit la langue à tout l'arbre, écran d'appairage compris. */
 export default function App() {
+  const i18n = useI18n();
+  return (
+    <I18nProvider value={i18n}>
+      <AppInner i18n={i18n} />
+    </I18nProvider>
+  );
+}
+
+function AppInner({ i18n }: { i18n: ClientI18n }) {
+  const { t, lang, setLang } = i18n;
   const [token, setToken] = useState<string | null>(savedToken());
   const [state, setState] = useState<ConnState>("closed");
   const [mode, setMode] = useState<Mode>(
     (localStorage.getItem("rem_mode") as Mode) || "traditional"
   );
   const [modules, setModules] = useState<Record<ModuleId, boolean>>(loadModules);
-  const [pub, setPub] = useState<PublicInfo>({ video: false, video_available: false });
+  const [pub, setPub] = useState<PublicInfo>({
+    video: false,
+    video_available: false,
+    camera_available: false,
+    audio_available: false,
+    captures_allowed: false,
+  });
   const sockRef = useRef<RemSocket | null>(null);
 
   useEffect(() => {
@@ -141,10 +160,10 @@ export default function App() {
   };
 
   const statusBadge = useMemo(() => {
-    if (state === "open") return <Badge variant="online">Connecté</Badge>;
-    if (state === "connecting") return <Badge variant="default">Connexion…</Badge>;
-    return <Badge variant="offline">Déconnecté</Badge>;
-  }, [state]);
+    if (state === "open") return <Badge variant="online">{t("connected")}</Badge>;
+    if (state === "connecting") return <Badge variant="default">{t("connecting")}</Badge>;
+    return <Badge variant="offline">{t("disconnected")}</Badge>;
+  }, [state, t]);
 
   if (!token) return <Pairing onPaired={() => setToken(savedToken())} />;
 
@@ -167,7 +186,15 @@ export default function App() {
         </div>
         <div className="flex items-center gap-2">
           {statusBadge}
-          <Button variant="ghost" size="icon" onClick={logout} title="Déconnexion">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setLang(lang === "fr" ? "en" : "fr")}
+            title={t("lang_switch")}
+          >
+            <Languages className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={logout} title={t("logout")}>
             <LogOut className="h-4 w-4" />
           </Button>
         </div>
@@ -184,7 +211,7 @@ export default function App() {
               : "text-muted-foreground"
           )}
         >
-          <Rows3 className="h-4 w-4" /> Traditionnel
+          <Rows3 className="h-4 w-4" /> {t("mode_traditional")}
         </button>
         <button
           onClick={() => setModeP("custom")}
@@ -195,7 +222,7 @@ export default function App() {
               : "text-muted-foreground"
           )}
         >
-          <LayoutGrid className="h-4 w-4" /> Custom
+          <LayoutGrid className="h-4 w-4" /> {t("mode_custom")}
         </button>
       </div>
 
@@ -246,7 +273,7 @@ export default function App() {
                 )}
               >
                 {modules[m.id] ? <Check className="h-3.5 w-3.5" /> : m.icon}
-                {m.label}
+                {t(m.label)}
               </button>
             ))}
           </div>
@@ -255,7 +282,7 @@ export default function App() {
           <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pb-2">
             {activeModules.length === 0 && (
               <p className="py-10 text-center text-sm text-muted-foreground">
-                Choisis au moins un module ci-dessus
+                {t("pick_module")}
               </p>
             )}
             {modules.video && (

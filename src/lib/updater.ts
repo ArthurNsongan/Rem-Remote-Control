@@ -2,6 +2,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { check, type Update } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { getVersion } from "@tauri-apps/api/app";
+import { openUrl } from "@tauri-apps/plugin-opener";
+import { api } from "./tauri";
+
+/** Page de repli quand l'installation en place est impossible. */
+const RELEASES_URL = "https://github.com/ArthurNsongan/Rem-Remote-Control/releases/latest";
 
 /** Délai avant la vérification automatique au lancement (laisse l'UI se poser). */
 const STARTUP_DELAY = 3_000;
@@ -20,12 +25,16 @@ export type UpdateStatus =
 export function useUpdater() {
   const [status, setStatus] = useState<UpdateStatus>({ kind: "idle" });
   const [current, setCurrent] = useState("");
+  // Toutes les installations ne savent pas se remplacer elles-mêmes (.deb,
+  // bundle macOS non signé) : on propose alors le téléchargement manuel.
+  const [canSelf, setCanSelf] = useState(true);
   // L'objet Update porte le handle de téléchargement : on le garde entre
   // la détection et l'installation.
   const pending = useRef<Update | null>(null);
 
   useEffect(() => {
     getVersion().then(setCurrent).catch(() => {});
+    api.canSelfUpdate().then(setCanSelf).catch(() => {});
   }, []);
 
   const runCheck = useCallback(async (silent: boolean) => {
@@ -89,6 +98,15 @@ export function useUpdater() {
   }, []);
 
   const restart = useCallback(() => relaunch(), []);
+  const openDownload = useCallback(() => openUrl(RELEASES_URL), []);
 
-  return { status, current, check: () => runCheck(false), install, restart };
+  return {
+    status,
+    current,
+    canSelf,
+    check: () => runCheck(false),
+    install,
+    restart,
+    openDownload,
+  };
 }

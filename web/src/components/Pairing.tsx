@@ -2,10 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { Activity, ShieldCheck, Lock } from "lucide-react";
 import { Button } from "@shared/ui/button";
 import { pair, PairError } from "../lib/socket";
+import { useT, type ClientKey } from "../i18n";
 
 export default function Pairing({ onPaired }: { onPaired: () => void }) {
   const [digits, setDigits] = useState<string[]>(Array(6).fill(""));
-  const [error, setError] = useState<string | null>(null);
+  const t = useT();
+  // Clef + variables plutôt que du texte figé : le message suit la langue.
+  const [error, setError] = useState<{ k: ClientKey; n?: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const [lock, setLock] = useState(0);
   const refs = useRef<(HTMLInputElement | null)[]>([]);
@@ -44,15 +47,13 @@ export default function Pairing({ onPaired }: { onPaired: () => void }) {
         setLock(err.retryAfter);
         setError(null);
       } else if (err.kind === "network") {
-        setError("Serveur injoignable");
+        setError({ k: "pair_net" });
+      } else if (err.remaining > 1) {
+        setError({ k: "pair_bad_many", n: err.remaining });
+      } else if (err.remaining === 1) {
+        setError({ k: "pair_bad_one" });
       } else {
-        setError(
-          err.remaining > 0
-            ? `Code incorrect — ${err.remaining} tentative${err.remaining > 1 ? "s" : ""} restante${
-                err.remaining > 1 ? "s" : ""
-              }`
-            : "Code incorrect, réessaie"
-        );
+        setError({ k: "pair_bad" });
       }
       setDigits(Array(6).fill(""));
       refs.current[0]?.focus();
@@ -80,7 +81,7 @@ export default function Pairing({ onPaired }: { onPaired: () => void }) {
         <div className="mb-5 flex items-center gap-2 text-muted-foreground">
           <ShieldCheck className="h-5 w-5 text-primary" />
           <span className="font-accent text-sm tracking-wide">
-            Entre le code PIN affiché sur le PC
+            {t("pair_prompt")}
           </span>
         </div>
 
@@ -105,13 +106,15 @@ export default function Pairing({ onPaired }: { onPaired: () => void }) {
         </div>
 
         {error && !lock && (
-          <p className="mt-4 text-center text-sm text-destructive">{error}</p>
+          <p className="mt-4 text-center text-sm text-destructive">
+            {t(error.k, error.n === undefined ? undefined : { n: error.n })}
+          </p>
         )}
 
         {lock > 0 && (
           <div className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-center text-sm text-destructive">
             <Lock className="h-4 w-4 shrink-0" />
-            <span>Trop de tentatives — réessaie dans {lock}s</span>
+            <span>{t("pair_locked", { s: lock })}</span>
           </div>
         )}
 
@@ -121,7 +124,11 @@ export default function Pairing({ onPaired }: { onPaired: () => void }) {
           disabled={busy || lock > 0 || digits.join("").length !== 6}
           onClick={() => submit(digits.join(""))}
         >
-          {lock > 0 ? `Verrouillé ${lock}s` : busy ? "Connexion…" : "Se connecter"}
+          {lock > 0
+            ? t("pair_locked_btn", { s: lock })
+            : busy
+              ? t("pair_connecting")
+              : t("pair_connect")}
         </Button>
       </div>
     </div>

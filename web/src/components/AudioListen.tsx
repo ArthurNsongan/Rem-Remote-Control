@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Play, Square, Volume2, Mic } from "lucide-react";
 import { Button } from "@shared/ui/button";
+import { useT } from "../i18n";
 
 /**
  * Écoute en direct l'audio du PC (système ou micro) via WebSocket PCM.
@@ -16,6 +17,7 @@ export default function AudioListen({
   token: string;
   available: boolean;
 }) {
+  const t = useT();
   const [on, setOn] = useState(false);
   const [err, setErr] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
@@ -25,7 +27,7 @@ export default function AudioListen({
   const curRef = useRef<{ buf: Float32Array; pos: number } | null>(null);
 
   const isMic = src === "mic";
-  const title = isMic ? "Micro du PC" : "Audio du PC";
+  const title = isMic ? t("audio_mic_title") : t("audio_sys_title");
   const Icon = isMic ? Mic : Volume2;
 
   const stop = () => {
@@ -114,12 +116,12 @@ export default function AudioListen({
         <p className="font-sans text-sm">{title}</p>
         <p className="truncate text-xs text-muted-foreground">
           {!available
-            ? "Indisponible sur le PC"
+            ? t("audio_unavailable")
             : err
-              ? "Erreur de flux"
+              ? t("audio_error")
               : on
-                ? "En écoute… 🔊"
-                : "Touche pour écouter en direct"}
+                ? t("audio_on")
+                : t("audio_off")}
         </p>
       </div>
       <Button
@@ -129,7 +131,7 @@ export default function AudioListen({
         onClick={on ? stop : start}
       >
         {on ? <Square /> : <Play />}
-        {on ? "Stop" : "Écouter"}
+        {on ? t("stop") : t("listen")}
       </Button>
     </div>
   );

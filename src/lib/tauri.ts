@@ -32,4 +32,5 @@ export const api = {
   setCapturesAllowed: (enabled: boolean) =>
     invoke<boolean>("set_captures_allowed", { enabled }),
   getDevices: () => invoke<DeviceInfo[]>("get_devices"),
+  canSelfUpdate: () => invoke<boolean>("can_self_update"),
 };

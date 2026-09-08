@@ -8,6 +8,7 @@ import {
 import type { ClientMessage } from "@shared/protocol";
 import { Button } from "@shared/ui/button";
 import { Slider } from "@shared/ui/slider";
+import { useT } from "../i18n";
 
 type Send = (msg: ClientMessage) => void;
 
@@ -16,6 +17,7 @@ const TAP_DIST = 8;
 const ACCEL = 0.08; // amplifie les mouvements rapides
 
 export default function Touchpad({ send, fill }: { send: Send; fill?: boolean }) {
+  const t = useT();
   const [sens, setSens] = useState(2.6);
   const sensRef = useRef(2.6);
   sensRef.current = sens;
@@ -88,7 +90,7 @@ export default function Touchpad({ send, fill }: { send: Send; fill?: boolean })
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 px-4 text-center text-muted-foreground/60">
             <MousePointer2 className="h-8 w-8" />
             <span className="font-accent text-xs tracking-widest">
-              GLISSE POUR BOUGER · TAP = CLIC
+              {t("pad_hint")}
             </span>
           </div>
         </div>
@@ -110,7 +112,7 @@ export default function Touchpad({ send, fill }: { send: Send; fill?: boolean })
       <div className="glass rounded-2xl p-3.5">
         <div className="mb-2.5 flex items-center justify-between font-accent text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
-            <Gauge className="h-4 w-4" /> SENSIBILITÉ
+            <Gauge className="h-4 w-4" /> {t("sensitivity")}
           </span>
           <span className="text-foreground/90">{sens.toFixed(1)}×</span>
         </div>
@@ -130,7 +132,7 @@ export default function Touchpad({ send, fill }: { send: Send; fill?: boolean })
           onPointerDown={() => send({ type: "mouse_click", button: "left" })}
         >
           <MousePointerClick />
-          Clic gauche
+          {t("click_left")}
         </Button>
         <Button
           variant="glass"
@@ -138,7 +140,7 @@ export default function Touchpad({ send, fill }: { send: Send; fill?: boolean })
           onPointerDown={() => send({ type: "mouse_click", button: "right" })}
         >
           <MousePointerClick />
-          Clic droit
+          {t("click_right")}
         </Button>
       </div>
     </div>

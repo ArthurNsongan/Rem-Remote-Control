@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import type { ClientMessage } from "@shared/protocol";
 import { Button } from "@shared/ui/button";
+import { useT } from "../i18n";
 
 type Send = (msg: ClientMessage) => void;
 
@@ -26,6 +27,7 @@ export default function VideoScreen({
   enabled: boolean;
   available: boolean;
 }) {
+  const t = useT();
   const wrapRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const ringRef = useRef<HTMLDivElement>(null);
@@ -142,7 +144,7 @@ export default function VideoScreen({
           <img
             ref={imgRef}
             src={`/stream?token=${encodeURIComponent(token)}`}
-            alt="écran"
+            alt={t("screen_alt")}
             className="block h-full w-full select-none"
             style={{ objectFit: "contain", touchAction: "none" }}
             draggable={false}
@@ -151,10 +153,10 @@ export default function VideoScreen({
           <div className="flex flex-col items-center justify-center gap-2 p-6 text-center text-muted-foreground">
             <MonitorPlay className="h-8 w-8" />
             <span className="font-sans text-sm">
-              {available ? "Flux désactivé sur le PC" : "Capture indisponible sur le PC"}
+              {available ? t("screen_off") : t("screen_na")}
             </span>
             <span className="text-xs text-muted-foreground/70">
-              Active « Partage d'écran » dans le dashboard du PC, puis touche l'image pour viser.
+              {t("screen_hint")}
             </span>
           </div>
         )}
@@ -165,7 +167,7 @@ export default function VideoScreen({
         <button
           onClick={toggleFs}
           className="absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-xl border border-white/15 bg-black/40 text-white backdrop-blur-md transition hover:bg-black/60"
-          title={fs ? "Quitter le plein écran" : "Plein écran paysage"}
+          title={fs ? t("fs_exit") : t("fs_enter_land")}
         >
           {fs ? <Minimize2 className="h-5 w-5" /> : <Expand className="h-5 w-5" />}
         </button>
@@ -173,7 +175,7 @@ export default function VideoScreen({
 
       <div className="flex items-center gap-2">
         <p className="flex flex-1 items-center gap-1.5 font-sans text-xs text-muted-foreground">
-          <Hand className="h-4 w-4" /> Touche = viser + clic · glisse = déplacer · double = double-clic
+          <Hand className="h-4 w-4" /> {t("screen_gestures")}
         </p>
         <Button
           variant="glass"
@@ -182,7 +184,7 @@ export default function VideoScreen({
           onPointerDown={() => send({ type: "mouse_click", button: "right" })}
         >
           <MousePointerClick />
-          Clic droit
+          {t("click_right")}
         </Button>
       </div>
     </div>

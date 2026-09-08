@@ -2,11 +2,13 @@ import { ArrowUpCircle, CheckCircle2, Download, RefreshCw, RotateCw, TriangleAle
 import { Button } from "@shared/ui/button";
 import { Card, CardContent } from "@shared/ui/card";
 import type { useUpdater } from "../lib/updater";
+import type { AppI18n } from "../i18n";
 
 type Updater = ReturnType<typeof useUpdater>;
+type T = AppI18n["t"];
 
 /** Bandeau visible seulement quand il y a quelque chose à faire ou à attendre. */
-export function UpdateBanner({ up }: { up: Updater }) {
+export function UpdateBanner({ up, t }: { up: Updater; t: T }) {
   const s = up.status;
   if (s.kind !== "available" && s.kind !== "downloading" && s.kind !== "ready") return null;
 
@@ -24,25 +26,32 @@ export function UpdateBanner({ up }: { up: Updater }) {
           <div className="min-w-0">
             <p className="text-sm font-semibold">
               {s.kind === "ready"
-                ? `Version ${s.version} installée`
-                : `Version ${s.version} disponible`}
+                ? t("up_installed", { v: s.version })
+                : t("up_available", { v: s.version })}
             </p>
             <p className="truncate text-xs text-muted-foreground">
               {s.kind === "downloading"
                 ? s.percent === null
-                  ? "Téléchargement…"
-                  : `Téléchargement… ${s.percent} %`
+                  ? t("up_downloading")
+                  : t("up_downloading_pct", { p: s.percent })
                 : s.kind === "ready"
-                  ? "Redémarre Rem pour l'utiliser."
-                  : s.notes.split("\n")[0] || "Mise à jour disponible"}
+                  ? t("up_restart_hint")
+                  : !up.canSelf
+                    ? t("up_manual_hint")
+                    : s.notes.split("\n")[0] || t("up_generic")}
             </p>
           </div>
         </div>
 
+        {/* Une installation .deb ou un bundle macOS non signé ne peut pas se
+            remplacer : on renvoie alors vers la page de téléchargement. */}
         {s.kind === "available" && (
-          <Button onClick={up.install} className="shrink-0 sm:w-44">
+          <Button
+            onClick={up.canSelf ? up.install : up.openDownload}
+            className="shrink-0 sm:w-44"
+          >
             <Download />
-            Mettre à jour
+            {up.canSelf ? t("up_install") : t("up_download")}
           </Button>
         )}
         {s.kind === "downloading" && (
@@ -56,7 +65,7 @@ export function UpdateBanner({ up }: { up: Updater }) {
         {s.kind === "ready" && (
           <Button onClick={up.restart} className="shrink-0 sm:w-44">
             <RotateCw />
-            Redémarrer
+            {t("up_restart")}
           </Button>
         )}
       </CardContent>
@@ -65,23 +74,23 @@ export function UpdateBanner({ up }: { up: Updater }) {
 }
 
 /** Ligne « version installée + recherche manuelle », dans les réglages. */
-export function UpdateSettings({ up }: { up: Updater }) {
+export function UpdateSettings({ up, t }: { up: Updater; t: T }) {
   const s = up.status;
   return (
     <div className="flex flex-col gap-2 border-t border-white/10 pt-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
-        <p className="text-sm">Version {up.current || "…"}</p>
+        <p className="text-sm">{t("up_version", { v: up.current || "…" })}</p>
         <p className="text-xs text-muted-foreground">
-          {s.kind === "checking" && "Recherche en cours…"}
-          {s.kind === "uptodate" && "Rem est à jour."}
+          {s.kind === "checking" && t("up_checking")}
+          {s.kind === "uptodate" && t("up_uptodate")}
           {s.kind === "error" && (
             <span className="inline-flex items-center gap-1 text-destructive">
               <TriangleAlert className="h-3 w-3" />
-              Vérification impossible
+              {t("up_error")}
             </span>
           )}
           {s.kind !== "checking" && s.kind !== "uptodate" && s.kind !== "error" && (
-            <>Mises à jour vérifiées automatiquement</>
+            <>{up.canSelf ? t("up_auto") : t("up_manual_hint")}</>
           )}
         </p>
       </div>
@@ -92,7 +101,7 @@ export function UpdateSettings({ up }: { up: Updater }) {
         className="w-full sm:w-56"
       >
         <RefreshCw className={s.kind === "checking" ? "animate-spin" : undefined} />
-        Rechercher une mise à jour
+        {t("up_check")}
       </Button>
     </div>
   );

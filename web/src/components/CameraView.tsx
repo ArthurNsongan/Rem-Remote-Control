@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Camera, Expand, Minimize2, Play, Square } from "lucide-react";
 import { Button } from "@shared/ui/button";
+import { useT } from "../i18n";
 
 /** Affiche la webcam du PC (MJPEG). L'ouverture du flux démarre la capture (à distance). */
 export default function CameraView({
@@ -10,6 +11,7 @@ export default function CameraView({
   token: string;
   available: boolean;
 }) {
+  const t = useT();
   const wrapRef = useRef<HTMLDivElement>(null);
   const [on, setOn] = useState(false);
   const [fs, setFs] = useState(false);
@@ -42,7 +44,7 @@ export default function CameraView({
         {on && available ? (
           <img
             src={src}
-            alt="caméra"
+            alt={t("cam_alt")}
             className="block h-full w-full select-none"
             style={{ objectFit: "contain" }}
             draggable={false}
@@ -51,10 +53,10 @@ export default function CameraView({
           <div className="flex flex-col items-center justify-center gap-2 p-6 text-center text-muted-foreground">
             <Camera className="h-8 w-8" />
             <span className="font-sans text-sm">
-              {available ? "Caméra du PC" : "Aucune caméra sur le PC"}
+              {available ? t("cam_title") : t("cam_none")}
             </span>
             <span className="text-xs text-muted-foreground/70">
-              Démarre pour voir le flux webcam du PC.
+              {t("cam_hint")}
             </span>
           </div>
         )}
@@ -62,7 +64,7 @@ export default function CameraView({
           <button
             onClick={toggleFs}
             className="absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-xl border border-white/15 bg-black/40 text-white backdrop-blur-md transition hover:bg-black/60"
-            title={fs ? "Quitter le plein écran" : "Plein écran"}
+            title={fs ? t("fs_exit") : t("fs_enter")}
           >
             {fs ? <Minimize2 className="h-5 w-5" /> : <Expand className="h-5 w-5" />}
           </button>
@@ -75,7 +77,7 @@ export default function CameraView({
         onClick={() => setOn((v) => !v)}
       >
         {on ? <Square /> : <Play />}
-        {on ? "Arrêter la caméra" : "Démarrer la caméra"}
+        {on ? t("cam_stop") : t("cam_start")}
       </Button>
     </div>
   );

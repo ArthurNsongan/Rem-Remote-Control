@@ -18,6 +18,7 @@ import { api, type ServerInfo, type DeviceInfo } from "./lib/tauri";
 import TitleBar from "./components/TitleBar";
 import { UpdateBanner, UpdateSettings } from "./components/Updater";
 import { useUpdater } from "./lib/updater";
+import { useI18n } from "./i18n";
 import { Card, CardContent, CardHeader, CardTitle } from "@shared/ui/card";
 import { Button } from "@shared/ui/button";
 import { Badge } from "@shared/ui/badge";
@@ -52,6 +53,8 @@ function timeAgo(unix: number) {
 }
 
 export default function App() {
+  const i18n = useI18n();
+  const { t } = i18n;
   const updater = useUpdater();
   const [info, setInfo] = useState<ServerInfo | null>(null);
   const [devices, setDevices] = useState<DeviceInfo[]>([]);
@@ -125,7 +128,7 @@ export default function App() {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden">
-      <TitleBar />
+      <TitleBar i18n={i18n} />
 
       <div className="relative flex-1 overflow-hidden">
         <Backdrop />
@@ -141,17 +144,17 @@ export default function App() {
               <div>
                 <h1 className="font-sans text-xl font-bold tracking-tight">REM</h1>
                 <p className="text-xs tracking-wide text-muted-foreground">
-                  Remote Control · LAN
+                  {t("subtitle")}
                 </p>
               </div>
             </div>
             <Badge variant={running ? "online" : "offline"}>
               {running ? <Wifi className="h-3.5 w-3.5" /> : <WifiOff className="h-3.5 w-3.5" />}
-              {running ? "En ligne" : "Hors ligne"}
+              {running ? t("online") : t("offline")}
             </Badge>
           </header>
 
-          <UpdateBanner up={updater} />
+          <UpdateBanner up={updater} t={t} />
 
           {/* Server control */}
           <Card>
@@ -171,12 +174,10 @@ export default function App() {
                 </button>
                 <div className="min-w-0">
                   <p className="font-semibold tracking-tight">
-                    Serveur {running ? "actif" : "arrêté"}
+                    {running ? t("server_on") : t("server_off")}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {running
-                      ? "Les appareils du réseau peuvent se connecter"
-                      : "Démarre le serveur pour autoriser les connexions"}
+                    {running ? t("server_on_hint") : t("server_off_hint")}
                   </p>
                 </div>
               </div>
@@ -187,7 +188,7 @@ export default function App() {
                 className="w-full sm:w-44"
               >
                 <Power />
-                {running ? "Arrêter" : "Démarrer"}
+                {running ? t("stop") : t("start")}
               </Button>
             </CardContent>
           </Card>
@@ -199,7 +200,7 @@ export default function App() {
               <CardHeader className="p-4 pb-2">
                 <CardTitle className="flex items-center gap-2">
                   <Smartphone className="h-4 w-4 text-primary" />
-                  Connexion
+                  {t("connection")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col items-center gap-4 p-4 pt-2">
@@ -235,7 +236,7 @@ export default function App() {
                 <CardHeader className="p-4 pb-2">
                   <CardTitle className="flex items-center gap-2">
                     <ShieldCheck className="h-4 w-4 text-primary" />
-                    Code PIN
+                    {t("pin")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="flex items-center gap-3 p-4 pt-2">
@@ -253,7 +254,7 @@ export default function App() {
                     variant="outline"
                     size="icon"
                     onClick={regen}
-                    title="Régénérer"
+                    title={t("regenerate")}
                     className="h-12 w-12 shrink-0"
                   >
                     <RefreshCw />
@@ -265,7 +266,7 @@ export default function App() {
                 <CardHeader className="p-4 pb-2">
                   <CardTitle className="flex items-center gap-2">
                     <Monitor className="h-4 w-4 text-primary" />
-                    Appareils
+                    {t("devices")}
                     <Badge variant="outline" className="ml-auto">
                       {devices.length}
                     </Badge>
@@ -274,7 +275,7 @@ export default function App() {
                 <CardContent className="space-y-2 p-4 pt-2">
                   {devices.length === 0 && (
                     <p className="py-3 text-center text-sm text-muted-foreground">
-                      Aucun appareil connecté
+                      {t("no_device")}
                     </p>
                   )}
                   {devices.map((d, i) => {
@@ -290,7 +291,7 @@ export default function App() {
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm">{d.addr}</p>
                           <p className="truncate text-xs text-muted-foreground">
-                            il y a {timeAgo(d.connected_at)}
+                            {t("ago", { t: timeAgo(d.connected_at) })}
                           </p>
                         </div>
                         <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-400 shadow-[0_0_10px_rgb(52_211_153)] animate-pulseglow" />
@@ -307,19 +308,17 @@ export default function App() {
             <CardHeader className="p-4 pb-2">
               <CardTitle className="flex items-center gap-2">
                 <MonitorPlay className="h-4 w-4 text-primary" />
-                Partage d'écran
+                {t("screen_share")}
                 <Badge variant={info?.video_enabled ? "online" : "outline"} className="ml-auto">
-                  {info?.video_enabled ? "Actif" : "Inactif"}
+                  {info?.video_enabled ? t("active") : t("inactive")}
                 </Badge>
               </CardTitle>
             </CardHeader>
             <CardContent className="flex items-center justify-between gap-3 p-4 pt-2">
               <div className="min-w-0">
-                <p className="text-sm">Autoriser le flux vidéo (mode custom)</p>
+                <p className="text-sm">{t("video_toggle")}</p>
                 <p className="text-xs text-muted-foreground">
-                  {info?.video_available
-                    ? "Le client peut voir l'écran et viser au doigt"
-                    : "Capture indisponible sur cette machine"}
+                  {info?.video_available ? t("video_yes") : t("video_no")}
                 </p>
               </div>
               <Switch
@@ -335,19 +334,17 @@ export default function App() {
             <CardHeader className="p-4 pb-2">
               <CardTitle className="flex items-center gap-2">
                 <Camera className="h-4 w-4 text-primary" />
-                Captures à distance
+                {t("captures")}
                 <Badge variant={info?.captures_allowed ? "online" : "outline"} className="ml-auto">
-                  {info?.captures_allowed ? "Autorisé" : "Bloqué"}
+                  {info?.captures_allowed ? t("allowed") : t("blocked")}
                 </Badge>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 p-4 pt-2">
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-sm">Autoriser caméra / micro / audio à distance</p>
-                  <p className="text-xs text-muted-foreground">
-                    Le client peut écouter/voir le PC. Coupe pour tout bloquer.
-                  </p>
+                  <p className="text-sm">{t("captures_toggle")}</p>
+                  <p className="text-xs text-muted-foreground">{t("captures_hint")}</p>
                 </div>
                 <Switch
                   checked={info?.captures_allowed ?? false}
@@ -357,12 +354,12 @@ export default function App() {
               </div>
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { on: info?.cam_active, ok: info?.camera_available, Icon: Camera, label: "Caméra" },
-                  { on: info?.mic_active, ok: info?.audio_available, Icon: Mic, label: "Micro" },
-                  { on: info?.sys_active, ok: info?.audio_available, Icon: Volume2, label: "Audio" },
-                ].map(({ on, ok, Icon, label }) => (
+                  { on: info?.cam_active, ok: info?.camera_available, Icon: Camera, key: "camera" as const },
+                  { on: info?.mic_active, ok: info?.audio_available, Icon: Mic, key: "mic" as const },
+                  { on: info?.sys_active, ok: info?.audio_available, Icon: Volume2, key: "audio" as const },
+                ].map(({ on, ok, Icon, key }) => (
                   <div
-                    key={label}
+                    key={key}
                     className={cn(
                       "flex items-center gap-2 rounded-xl border px-3 py-2",
                       on
@@ -371,7 +368,7 @@ export default function App() {
                     )}
                   >
                     <Icon className="h-4 w-4 shrink-0" />
-                    <span className="min-w-0 flex-1 truncate text-xs">{label}</span>
+                    <span className="min-w-0 flex-1 truncate text-xs">{t(key)}</span>
                     <span
                       className={cn(
                         "h-2 w-2 shrink-0 rounded-full",
@@ -381,7 +378,7 @@ export default function App() {
                             ? "bg-white/25"
                             : "bg-red-500/50"
                       )}
-                      title={ok ? (on ? "en direct" : "prêt") : "indisponible"}
+                      title={ok ? (on ? t("live") : t("ready")) : t("unavailable")}
                     />
                   </div>
                 ))}
@@ -394,12 +391,12 @@ export default function App() {
             <CardHeader className="p-4 pb-2">
               <CardTitle className="flex items-center gap-2">
                 <SettingsIcon className="h-4 w-4 text-primary" />
-                Réglages
+                {t("settings")}
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-3 p-4 pt-2 sm:flex-row sm:items-end">
               <div className="space-y-1.5">
-                <Label htmlFor="port">Port du serveur</Label>
+                <Label htmlFor="port">{t("port")}</Label>
                 <Input
                   id="port"
                   value={portInput}
@@ -415,16 +412,16 @@ export default function App() {
                 disabled={running}
                 className="w-full sm:w-32"
               >
-                Appliquer
+                {t("apply")}
               </Button>
               {running && (
                 <p className="text-xs text-muted-foreground sm:ml-auto sm:self-center">
-                  Arrête le serveur pour changer le port
+                  {t("port_locked")}
                 </p>
               )}
             </CardContent>
             <CardContent className="p-4 pt-0">
-              <UpdateSettings up={updater} />
+              <UpdateSettings up={updater} t={t} />
             </CardContent>
           </Card>
           </div>

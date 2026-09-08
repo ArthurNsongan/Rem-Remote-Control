@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { getVersion } from "@tauri-apps/api/app";
 import {
   Menu as MenuIcon,
   Minus,
@@ -14,8 +15,12 @@ import {
   Info,
   Power,
   ChevronRight,
+  Languages,
 } from "lucide-react";
 import { cn } from "@shared/cn";
+import type { AppI18n } from "../i18n";
+
+const REPO_URL = "https://github.com/ArthurNsongan/Rem-Remote-Control";
 
 const appWindow = getCurrentWindow();
 
@@ -23,10 +28,16 @@ type Item =
   | { kind: "sep" }
   | { kind: "item"; icon: React.ReactNode; label: string; onClick: () => void; danger?: boolean };
 
-export default function TitleBar() {
+export default function TitleBar({ i18n }: { i18n: AppI18n }) {
+  const { t, lang, setLang } = i18n;
   const [open, setOpen] = useState(false);
   const [maximized, setMaximized] = useState(false);
+  const [version, setVersion] = useState("");
   const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    getVersion().then(setVersion).catch(() => {});
+  }, []);
 
   useEffect(() => {
     appWindow.isMaximized().then(setMaximized).catch(() => {});
@@ -51,27 +62,33 @@ export default function TitleBar() {
     {
       kind: "item",
       icon: <RefreshCw />,
-      label: "Actualiser",
+      label: t("reload"),
       onClick: () => location.reload(),
     },
     {
       kind: "item",
+      icon: <Languages />,
+      // Libellé dans la langue vers laquelle on bascule, pas la langue courante.
+      label: t("switch_lang"),
+      onClick: () => setLang(lang === "fr" ? "en" : "fr"),
+    },
+    {
+      kind: "item",
       icon: <Github />,
-      label: "Code source",
-      onClick: () => openUrl("https://github.com/").catch(() => {}),
+      label: t("source"),
+      onClick: () => openUrl(REPO_URL).catch(() => {}),
     },
     {
       kind: "item",
       icon: <Info />,
-      label: "À propos de Rem",
-      onClick: () =>
-        alert("REM — Remote Control\nContrôle LAN · v0.1.0\nTauri + React"),
+      label: t("about"),
+      onClick: () => alert(t("about_body", { v: version || "?" })),
     },
     { kind: "sep" },
     {
       kind: "item",
       icon: <Power />,
-      label: "Quitter",
+      label: t("quit"),
       danger: true,
       onClick: () => invoke("quit"),
     },
@@ -91,7 +108,7 @@ export default function TitleBar() {
               "grid h-8 w-9 place-items-center rounded-lg text-foreground/80 transition-colors hover:bg-white/10",
               open && "bg-white/10 text-foreground"
             )}
-            title="Menu"
+            title={t("menu")}
           >
             <MenuIcon className="h-4 w-4" />
           </button>
@@ -148,14 +165,14 @@ export default function TitleBar() {
         <button
           onClick={() => appWindow.minimize()}
           className="grid h-8 w-10 place-items-center rounded-lg text-foreground/70 transition-colors hover:bg-white/10"
-          title="Réduire"
+          title={t("minimize")}
         >
           <Minus className="h-4 w-4" />
         </button>
         <button
           onClick={() => appWindow.toggleMaximize()}
           className="grid h-8 w-10 place-items-center rounded-lg text-foreground/70 transition-colors hover:bg-white/10"
-          title={maximized ? "Restaurer" : "Agrandir"}
+          title={maximized ? t("restore") : t("maximize")}
         >
           {maximized ? (
             <RestoreIcon className="h-3.5 w-3.5" />
@@ -166,7 +183,7 @@ export default function TitleBar() {
         <button
           onClick={() => appWindow.close()}
           className="grid h-8 w-10 place-items-center rounded-lg text-foreground/70 transition-colors hover:bg-red-500/80 hover:text-white"
-          title="Fermer (reste actif dans la barre système)"
+          title={t("close_hint")}
         >
           <X className="h-4 w-4" />
         </button>
