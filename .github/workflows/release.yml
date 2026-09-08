@@ -87,7 +87,8 @@ jobs:
             nouvelles versions au lancement et propose de les installer.
 
             > Linux : l'écoute audio nécessite `pulseaudio-utils` (commande `parec`).
-            > Linux : la mise à jour automatique fonctionne avec l'`.AppImage`, pas avec le `.deb` (géré par apt).
+            > Mise à jour en place : `.msi` et `.AppImage` uniquement. Avec le `.deb` (géré par apt)
+            > et sur macOS (bundle non signé), Rem signale la nouvelle version mais renvoie au téléchargement.
             > macOS : binaire non signé — clic droit → Ouvrir au premier lancement.
           # Genere/complete latest.json, lu par le plugin updater des clients.
           # Chaque job de la matrice y ajoute sa plateforme.
