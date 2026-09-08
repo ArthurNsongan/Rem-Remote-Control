@@ -46,7 +46,8 @@ wasapi = "0.23"
 # Caméra via Video4Linux2 ; l'audio Linux passe par `parec` (PulseAudio/PipeWire),
 # donc aucune crate audio nécessaire.
 # enigo : X11 (x11rb, Rust pur) + Wayland wlroots + libei (portail XDG, GNOME/KDE).
-enigo = { version = "0.6", features = ["wayland", "libei_tokio"] }
+# Sur le commit epingle plus bas, `libei_tokio` a ete scinde en `libei` + `tokio`.
+enigo = { version = "0.6", features = ["wayland", "libei", "tokio"] }
 nokhwa = { version = "0.10", features = ["input-v4l"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
@@ -55,3 +56,12 @@ nokhwa = { version = "0.10", features = ["input-avfoundation"] }
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-updater = "2"
+
+# enigo 0.6.1 fait un unwrap() sur l'ouverture du portail XDG RemoteDesktop
+# (linux/libei.rs). Comme le backend libei est essaye en dernier et
+# systematiquement - meme quand X11 s'est deja connecte - toute machine sans
+# xdg-desktop-portal joignable fait paniquer l'app au demarrage au lieu de
+# retomber sur X11. Corrige en amont (open_connection renvoie un Result) mais
+# pas encore publie : on epingle le commit. A retirer des la sortie de 0.6.2.
+[patch.crates-io]
+enigo = { git = "https://github.com/enigo-rs/enigo", rev = "a88d9b7e2cec7043ab5f03e754500a091ea928d1" }
