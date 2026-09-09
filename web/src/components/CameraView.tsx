@@ -4,18 +4,14 @@ import { Button } from "@shared/ui/button";
 import { useT } from "../i18n";
 
 /** Affiche la webcam du PC (MJPEG). L'ouverture du flux démarre la capture (à distance). */
-export default function CameraView({
-  token,
-  available,
-}: {
-  token: string;
-  available: boolean;
-}) {
+export default function CameraView({ available }: { available: boolean }) {
   const t = useT();
   const wrapRef = useRef<HTMLDivElement>(null);
   const [on, setOn] = useState(false);
   const [fs, setFs] = useState(false);
-  const src = on ? `/camera?token=${encodeURIComponent(token)}&t=${Date.now()}` : "";
+  // `t` casse le cache du navigateur entre deux ouvertures ; le jeton, lui,
+  // voyage dans le cookie HttpOnly pose a l'appairage.
+  const src = on ? `/camera?t=${Date.now()}` : "";
 
   const toggleFs = async () => {
     const el = wrapRef.current;

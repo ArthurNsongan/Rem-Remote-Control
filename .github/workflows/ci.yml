@@ -4,8 +4,9 @@ name: CI
 # de Release. Sert à valider les dépendances système (les erreurs d'édition de
 # liens n'apparaissent qu'ici, pas avec `cargo check`).
 on:
+  # Toutes les branches, pas seulement main : les branches de correctif sont
+  # justement celles ou l on veut savoir tot que les 3 OS compilent encore.
   push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
 

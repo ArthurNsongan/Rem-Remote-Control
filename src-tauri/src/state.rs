@@ -58,6 +58,9 @@ pub struct Inner {
     pub mic_active: AtomicU64,
     pub sys_active: AtomicU64,
     pub shutdown: Mutex<Option<oneshot::Sender<()>>>,
+    /// Empreinte du certificat TLS en cours, vide tant que le serveur n'a pas
+    /// demarre.
+    cert_fingerprint: Mutex<String>,
     /// Limitation du brute-force sur /pair, par IP source.
     pair_attempts: Mutex<HashMap<IpAddr, Attempts>>,
     next_id: AtomicU64,
@@ -100,6 +103,7 @@ impl Shared {
             mic_active: AtomicU64::new(0),
             sys_active: AtomicU64::new(0),
             shutdown: Mutex::new(None),
+            cert_fingerprint: Mutex::new(String::new()),
             pair_attempts: Mutex::new(HashMap::new()),
             next_id: AtomicU64::new(1),
         }))
@@ -217,6 +221,18 @@ impl Shared {
         PairOutcome::Invalid {
             remaining: MAX_PAIR_FAILS - entry.fails,
         }
+    }
+
+    pub fn cert_fingerprint(&self) -> String {
+        self.0.cert_fingerprint.lock().unwrap().clone()
+    }
+
+    pub fn set_cert_fingerprint(&self, fp: String) {
+        *self.0.cert_fingerprint.lock().unwrap() = fp;
+    }
+
+    pub fn revoke_token(&self, token: &str) {
+        self.0.tokens.lock().unwrap().remove(token);
     }
 
     pub fn check_token(&self, token: &str) -> bool {

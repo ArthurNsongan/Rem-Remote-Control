@@ -18,12 +18,10 @@ const MOVE_MS = 22; // throttle des déplacements (~45 Hz) pour ne pas saturer l
 
 export default function VideoScreen({
   send,
-  token,
   enabled,
   available,
 }: {
   send: Send;
-  token: string;
   enabled: boolean;
   available: boolean;
 }) {
@@ -143,7 +141,7 @@ export default function VideoScreen({
         {enabled && available ? (
           <img
             ref={imgRef}
-            src={`/stream?token=${encodeURIComponent(token)}`}
+            src="/stream"
             alt={t("screen_alt")}
             className="block h-full w-full select-none"
             style={{ objectFit: "contain", touchAction: "none" }}

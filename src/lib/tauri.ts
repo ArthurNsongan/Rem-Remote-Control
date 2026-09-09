@@ -14,6 +14,7 @@ export interface ServerInfo {
   cam_active: boolean;
   mic_active: boolean;
   sys_active: boolean;
+  cert_fingerprint: string;
 }
 
 export interface DeviceInfo {

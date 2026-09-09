@@ -18,6 +18,9 @@ const dict = {
     stop: "Arrêter",
 
     connection: "Connexion",
+    tls_notice:
+      "À la première connexion, le téléphone affichera un avertissement de sécurité. C'est normal : le certificat est auto-signé. Continue.",
+    cert_fp: "Empreinte du certificat",
     pin: "Code PIN",
     regenerate: "Régénérer",
     devices: "Appareils",
@@ -92,6 +95,9 @@ const dict = {
     stop: "Stop",
 
     connection: "Connection",
+    tls_notice:
+      "On first connection your phone will show a security warning. That's expected — the certificate is self-signed. Go ahead.",
+    cert_fp: "Certificate fingerprint",
     pin: "PIN code",
     regenerate: "Regenerate",
     devices: "Devices",

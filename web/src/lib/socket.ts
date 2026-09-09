@@ -39,8 +39,18 @@ export async function fetchPublic(): Promise<PublicInfo> {
   }
 }
 
-export function clearToken() {
+/**
+ * Ferme la session des deux cotes : le serveur revoque le jeton et efface le
+ * cookie. Sans l'appel reseau, l'appareil resterait autorise a lire les flux
+ * malgre une deconnexion apparente dans l'interface.
+ */
+export async function clearToken() {
   localStorage.removeItem(TOKEN_KEY);
+  try {
+    await fetch("/logout", { method: "POST" });
+  } catch {
+    // Serveur deja parti : le jeton disparait avec lui.
+  }
 }
 
 /** Échec d'appairage : PIN faux, ou IP verrouillée après trop de tentatives. */
