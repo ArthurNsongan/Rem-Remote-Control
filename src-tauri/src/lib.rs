@@ -5,6 +5,7 @@ mod protocol;
 mod server;
 mod state;
 mod system;
+mod tls;
 mod video;
 
 use serde::Serialize;
@@ -46,7 +47,8 @@ fn build_info(shared: &Shared) -> ServerInfo {
         ip: ip.clone(),
         port,
         pin: shared.pin(),
-        url: format!("http://{ip}:{port}"),
+        // https : le serveur presente un certificat auto-signe (voir tls.rs).
+        url: format!("https://{ip}:{port}"),
         video_enabled: shared.video_enabled(),
         video_available: video::available(),
         camera_available: camera::available(),
@@ -64,12 +66,19 @@ fn get_server_info(shared: State<Shared>) -> ServerInfo {
 }
 
 #[tauri::command]
-async fn start_server(shared: State<'_, Shared>) -> Result<ServerInfo, String> {
+async fn start_server(
+    app: tauri::AppHandle,
+    shared: State<'_, Shared>,
+) -> Result<ServerInfo, String> {
     if shared.is_running() {
         return Ok(build_info(&shared));
     }
+    let data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("dossier de donnees introuvable: {e}"))?;
     let port = shared.port();
-    server::start(shared.inner().clone(), port).await?;
+    server::start(shared.inner().clone(), port, tls::dir_for(data_dir)).await?;
     Ok(build_info(&shared))
 }
 

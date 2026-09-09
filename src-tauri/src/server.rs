@@ -22,6 +22,7 @@ use serde_json::json;
 use tokio::sync::{mpsc, oneshot};
 
 use crate::input;
+use crate::tls;
 use crate::protocol::{ClientMessage, ServerMessage};
 use crate::state::{PairOutcome, Shared};
 use crate::{audio, camera, video};
@@ -114,7 +115,7 @@ fn apply(e: &mut Enigo, cmd: ClientMessage) {
 }
 
 /// Starts the axum server on 0.0.0.0:port. Returns once bound (or with an error).
-pub async fn start(shared: Shared, port: u16) -> Result<(), String> {
+pub async fn start(shared: Shared, port: u16, cert_dir: std::path::PathBuf) -> Result<(), String> {
     // Verify enigo can init before binding, then hand a fresh instance to the worker.
     input::new_enigo()?;
 
@@ -148,9 +149,20 @@ pub async fn start(shared: Shared, port: u16) -> Result<(), String> {
         .fallback(static_handler)
         .with_state(state);
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], port));
-    let listener = tokio::net::TcpListener::bind(addr)
+    // `ring` plutot que le fournisseur par defaut : voir Cargo.toml.
+    let _ = rustls::crypto::ring::default_provider().install_default();
+
+    let identity = tls::load_or_create(&cert_dir)?;
+    let config = axum_server::tls_rustls::RustlsConfig::from_pem(identity.cert_pem, identity.key_pem)
         .await
+        .map_err(|e| format!("tls: configuration rustls: {e}"))?;
+
+    // On lie nous-memes la socket pour que « port deja utilise » remonte a
+    // l'interface au lieu d'echouer plus tard dans la tache detachee.
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
+    let listener = std::net::TcpListener::bind(addr).map_err(|e| format!("bind {addr}: {e}"))?;
+    listener
+        .set_nonblocking(true)
         .map_err(|e| format!("bind {addr}: {e}"))?;
 
     let (tx, rx) = oneshot::channel::<()>();
@@ -160,15 +172,18 @@ pub async fn start(shared: Shared, port: u16) -> Result<(), String> {
         .running
         .store(true, std::sync::atomic::Ordering::SeqCst);
 
+    let handle = axum_server::Handle::new();
+    let handle_for_stop = handle.clone();
+    tokio::spawn(async move {
+        let _ = rx.await;
+        handle_for_stop.graceful_shutdown(Some(std::time::Duration::from_secs(1)));
+    });
+
     let shared_for_task = shared.clone();
     tokio::spawn(async move {
-        let server = axum::serve(
-            listener,
-            app.into_make_service_with_connect_info::<SocketAddr>(),
-        )
-        .with_graceful_shutdown(async {
-            let _ = rx.await;
-        });
+        let server = axum_server::from_tcp_rustls(listener, config)
+            .handle(handle)
+            .serve(app.into_make_service_with_connect_info::<SocketAddr>());
         if let Err(e) = server.await {
             eprintln!("server error: {e}");
         }
@@ -192,10 +207,11 @@ async fn pair(
     match state.shared.verify_pin(addr.ip(), body.pin.trim()) {
         PairOutcome::Ok(token) => {
             // Le cookie authentifie les flux <img> et le WebSocket audio ; le
-            // corps sert au message Auth du WebSocket de controle. Pas de
-            // drapeau Secure : le serveur est en HTTP sur le LAN.
+            // corps sert au message Auth du WebSocket de controle. Secure : le
+            // serveur ne repond qu'en TLS, le cookie ne doit jamais partir en
+            // clair si un client tentait du HTTP.
             let cookie = format!(
-                "{TOKEN_COOKIE}={token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=86400"
+                "{TOKEN_COOKIE}={token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=86400"
             );
             (
                 [(header::SET_COOKIE, cookie)],
@@ -225,7 +241,8 @@ async fn logout(State(state): State<AppState>, headers: axum::http::HeaderMap) -
     if let Some(token) = cookie_token(&headers) {
         state.shared.revoke_token(&token);
     }
-    let cleared = format!("{TOKEN_COOKIE}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0");
+    let cleared =
+        format!("{TOKEN_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0");
     ([(header::SET_COOKIE, cleared)], Json(json!({ "ok": true }))).into_response()
 }
 

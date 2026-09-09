@@ -211,7 +211,7 @@ export default function App() {
                   )}
                 >
                   <QRCodeSVG
-                    value={info?.url || "http://0.0.0.0"}
+                    value={info?.url || "https://0.0.0.0"}
                     size={150}
                     bgColor="#ffffff"
                     fgColor="#1a0b2e"

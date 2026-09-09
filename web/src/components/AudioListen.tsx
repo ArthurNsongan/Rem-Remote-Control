@@ -5,8 +5,11 @@ import { useT } from "../i18n";
 
 /**
  * Écoute en direct l'audio du PC (système ou micro) via WebSocket PCM.
- * Utilise ScriptProcessorNode (et non AudioWorklet) car le client tourne sur
- * http://<ip-lan> = contexte NON sécurisé, où AudioWorklet est indisponible.
+ *
+ * Utilise ScriptProcessorNode, hérité de l'époque où le serveur était en HTTP :
+ * AudioWorklet exige un contexte sécurisé. Le serveur est passé en HTTPS, donc
+ * la migration vers AudioWorklet est désormais possible — pas faite ici pour
+ * garder ce changement circonscrit au transport.
  */
 export default function AudioListen({
   src,
