@@ -36,6 +36,7 @@ xcap = "0.9"
 axum-server = { version = "0.7", features = ["tls-rustls-no-provider"] }
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12", "logging"] }
 rcgen = "0.14"
+sha2 = "0.10"
 image = { version = "0.25", default-features = false, features = ["jpeg"] }
 tauri-plugin-process = "2"
 

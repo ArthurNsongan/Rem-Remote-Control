@@ -153,6 +153,7 @@ pub async fn start(shared: Shared, port: u16, cert_dir: std::path::PathBuf) -> R
     let _ = rustls::crypto::ring::default_provider().install_default();
 
     let identity = tls::load_or_create(&cert_dir)?;
+    shared.set_cert_fingerprint(identity.fingerprint.clone());
     let config = axum_server::tls_rustls::RustlsConfig::from_pem(identity.cert_pem, identity.key_pem)
         .await
         .map_err(|e| format!("tls: configuration rustls: {e}"))?;

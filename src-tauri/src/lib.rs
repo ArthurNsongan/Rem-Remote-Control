@@ -31,6 +31,7 @@ pub struct ServerInfo {
     cam_active: bool,
     mic_active: bool,
     sys_active: bool,
+    cert_fingerprint: String,
 }
 
 fn local_ip() -> String {
@@ -57,6 +58,7 @@ fn build_info(shared: &Shared) -> ServerInfo {
         cam_active: shared.cam_active(),
         mic_active: shared.mic_active(),
         sys_active: shared.sys_active(),
+        cert_fingerprint: shared.cert_fingerprint(),
     }
 }
 

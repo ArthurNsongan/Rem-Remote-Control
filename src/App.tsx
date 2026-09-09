@@ -10,6 +10,7 @@ import {
   Tablet,
   Monitor,
   ShieldCheck,
+  ShieldAlert,
   Settings as SettingsIcon,
   Check,
   Link2,
@@ -227,6 +228,21 @@ export default function App() {
                     {copied ? <Check className="text-emerald-300" /> : <Copy />}
                   </Button>
                 </div>
+
+                {/* Le certificat est auto-signé : autant prévenir avant que le
+                    téléphone n'affiche un avertissement pris pour une panne. */}
+                <p className="flex items-start gap-2 text-xs text-muted-foreground">
+                  <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  <span>{t("tls_notice")}</span>
+                </p>
+                {info?.cert_fingerprint && (
+                  <details className="w-full text-xs text-muted-foreground">
+                    <summary className="cursor-pointer select-none">{t("cert_fp")}</summary>
+                    <code className="mt-1 block break-all font-mono text-[10px] leading-relaxed text-foreground/70">
+                      {info.cert_fingerprint}
+                    </code>
+                  </details>
+                )}
               </CardContent>
             </Card>
 
