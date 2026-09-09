@@ -89,7 +89,9 @@ jobs:
             > Linux : l'écoute audio nécessite `pulseaudio-utils` (commande `parec`).
             > Mise à jour en place : `.msi` et `.AppImage` uniquement. Avec le `.deb` (géré par apt)
             > et sur macOS (bundle non signé), Rem signale la nouvelle version mais renvoie au téléchargement.
-            > macOS : binaire non signé — clic droit → Ouvrir au premier lancement.
+            > macOS : binaire non signé. Depuis Sequoia, le clic droit → Ouvrir ne suffit plus :
+            > Réglages Système → Confidentialité et sécurité → « Ouvrir quand même », puis mot de passe admin.
+            > Windows : installeur non signé, SmartScreen affiche « Informations complémentaires » → « Exécuter quand même ».
           # Genere/complete latest.json, lu par le plugin updater des clients.
           # Chaque job de la matrice y ajoute sa plateforme.
           includeUpdaterJson: true
