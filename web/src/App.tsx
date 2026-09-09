@@ -168,7 +168,6 @@ function AppInner({ i18n }: { i18n: ClientI18n }) {
   if (!token) return <Pairing onPaired={() => setToken(savedToken())} />;
 
   const activeModules = MODULES.filter((m) => modules[m.id]);
-  const tok = savedToken() || "";
   // le trackpad ne remplit l'écran que s'il n'y a pas de gros module visuel
   const fillTrackpad = !modules.video && !modules.camera;
 
@@ -288,19 +287,18 @@ function AppInner({ i18n }: { i18n: ClientI18n }) {
             {modules.video && (
               <VideoScreen
                 send={send}
-                token={tok}
                 enabled={pub.video}
                 available={pub.video_available}
               />
             )}
             {modules.camera && (
-              <CameraView token={tok} available={pub.camera_available} />
+              <CameraView available={pub.camera_available} />
             )}
             {modules.audio_pc && (
-              <AudioListen src="system" token={tok} available={pub.audio_available} />
+              <AudioListen src="system" available={pub.audio_available} />
             )}
             {modules.mic && (
-              <AudioListen src="mic" token={tok} available={pub.audio_available} />
+              <AudioListen src="mic" available={pub.audio_available} />
             )}
             {modules.trackpad && (
               <div className={fillTrackpad ? "min-h-0 flex-1" : ""}>

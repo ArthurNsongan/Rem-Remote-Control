@@ -219,6 +219,10 @@ impl Shared {
         }
     }
 
+    pub fn revoke_token(&self, token: &str) {
+        self.0.tokens.lock().unwrap().remove(token);
+    }
+
     pub fn check_token(&self, token: &str) -> bool {
         self.0.tokens.lock().unwrap().contains(token)
     }

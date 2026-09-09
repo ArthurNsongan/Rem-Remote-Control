@@ -10,11 +10,9 @@ import { useT } from "../i18n";
  */
 export default function AudioListen({
   src,
-  token,
   available,
 }: {
   src: "system" | "mic";
-  token: string;
   available: boolean;
 }) {
   const t = useT();
@@ -76,7 +74,7 @@ export default function AudioListen({
 
       const proto = location.protocol === "https:" ? "wss" : "ws";
       const ws = new WebSocket(
-        `${proto}://${location.host}/audio?token=${encodeURIComponent(token)}&src=${src}`
+        `${proto}://${location.host}/audio?src=${src}`
       );
       ws.binaryType = "arraybuffer";
       wsRef.current = ws;

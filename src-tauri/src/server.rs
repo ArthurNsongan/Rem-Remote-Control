@@ -38,6 +38,46 @@ struct AppState {
     input_tx: mpsc::UnboundedSender<ClientMessage>,
 }
 
+/// Nom du cookie de session pose a l'appairage.
+const TOKEN_COOKIE: &str = "rem_token";
+
+/// Extrait le jeton de session du cookie de la requete.
+///
+/// Les flux `<img>` (MJPEG) ne peuvent pas porter d'en-tete d'autorisation :
+/// le jeton passait donc en parametre d'URL, ou il finissait dans
+/// l'historique du navigateur, les journaux des proxys traverses et l'en-tete
+/// Referer. Un cookie HttpOnly le sort de l'URL et le rend illisible au
+/// JavaScript de la page.
+fn cookie_token(headers: &axum::http::HeaderMap) -> Option<String> {
+    let raw = headers.get(header::COOKIE)?.to_str().ok()?;
+    raw.split(';')
+        .filter_map(|kv| kv.split_once('='))
+        .find(|(k, _)| k.trim() == TOKEN_COOKIE)
+        .map(|(_, v)| v.trim().to_string())
+}
+
+/// La requete provient-elle d'une page servie par ce meme serveur ?
+///
+/// Sans cette verification, n'importe quelle page ouverte sur un appareil du
+/// reseau peut ouvrir un WebSocket vers Rem (les WebSockets echappent a la
+/// same-origin policy). On compare l'origine a l'hote demande. Un `Origin`
+/// absent est accepte : les clients non-navigateur n'en envoient pas.
+fn same_origin(headers: &axum::http::HeaderMap) -> bool {
+    let origin = match headers.get(header::ORIGIN).and_then(|v| v.to_str().ok()) {
+        Some(o) => o,
+        None => return true,
+    };
+    let host = match headers.get(header::HOST).and_then(|v| v.to_str().ok()) {
+        Some(h) => h,
+        None => return false,
+    };
+    // "http://192.168.1.20:9847" -> "192.168.1.20:9847"
+    origin
+        .split_once("://")
+        .map(|(_, rest)| rest == host)
+        .unwrap_or(false)
+}
+
 /// Echecs consecutifs tolerees par une boucle de capture avant abandon.
 ///
 /// Quand la capture est structurellement impossible - session Wayland sans
@@ -99,6 +139,7 @@ pub async fn start(shared: Shared, port: u16) -> Result<(), String> {
 
     let app = Router::new()
         .route("/pair", post(pair))
+        .route("/logout", post(logout))
         .route("/ws", get(ws_handler))
         .route("/api/public", get(api_public))
         .route("/stream", get(stream))
@@ -149,7 +190,19 @@ async fn pair(
     Json(body): Json<PairBody>,
 ) -> Response {
     match state.shared.verify_pin(addr.ip(), body.pin.trim()) {
-        PairOutcome::Ok(token) => Json(json!({ "token": token })).into_response(),
+        PairOutcome::Ok(token) => {
+            // Le cookie authentifie les flux <img> et le WebSocket audio ; le
+            // corps sert au message Auth du WebSocket de controle. Pas de
+            // drapeau Secure : le serveur est en HTTP sur le LAN.
+            let cookie = format!(
+                "{TOKEN_COOKIE}={token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=86400"
+            );
+            (
+                [(header::SET_COOKIE, cookie)],
+                Json(json!({ "token": token })),
+            )
+                .into_response()
+        }
         PairOutcome::Invalid { remaining } => (
             StatusCode::UNAUTHORIZED,
             Json(json!({ "error": "invalid_pin", "remaining": remaining })),
@@ -164,12 +217,27 @@ async fn pair(
     }
 }
 
+/// Ferme la session : revoque le jeton cote serveur et efface le cookie.
+///
+/// Sans cela, un appareil "deconnecte" cote interface garderait un cookie
+/// valide et pourrait continuer a lire les flux.
+async fn logout(State(state): State<AppState>, headers: axum::http::HeaderMap) -> Response {
+    if let Some(token) = cookie_token(&headers) {
+        state.shared.revoke_token(&token);
+    }
+    let cleared = format!("{TOKEN_COOKIE}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0");
+    ([(header::SET_COOKIE, cleared)], Json(json!({ "ok": true }))).into_response()
+}
+
 async fn ws_handler(
     ws: WebSocketUpgrade,
     State(state): State<AppState>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     headers: axum::http::HeaderMap,
 ) -> Response {
+    if !same_origin(&headers) {
+        return (StatusCode::FORBIDDEN, "bad origin").into_response();
+    }
     let ua = headers
         .get(header::USER_AGENT)
         .and_then(|v| v.to_str().ok())
@@ -247,10 +315,9 @@ async fn api_public(State(state): State<AppState>) -> Response {
 /// Webcam MJPEG stream (remote-activated: opening this starts capture).
 async fn camera_stream(
     State(state): State<AppState>,
-    Query(q): Query<HashMap<String, String>>,
+    headers: axum::http::HeaderMap,
 ) -> Response {
-    let token = q.get("token").cloned().unwrap_or_default();
-    if !state.shared.check_token(&token) {
+    if !cookie_token(&headers).is_some_and(|t| state.shared.check_token(&t)) {
         return (StatusCode::UNAUTHORIZED, "unauthorized").into_response();
     }
     if !state.shared.captures_allowed() {
@@ -326,9 +393,12 @@ async fn audio_ws(
     ws: WebSocketUpgrade,
     State(state): State<AppState>,
     Query(q): Query<HashMap<String, String>>,
+    headers: axum::http::HeaderMap,
 ) -> Response {
-    let token = q.get("token").cloned().unwrap_or_default();
-    if !state.shared.check_token(&token) {
+    if !same_origin(&headers) {
+        return (StatusCode::FORBIDDEN, "bad origin").into_response();
+    }
+    if !cookie_token(&headers).is_some_and(|t| state.shared.check_token(&t)) {
         return (StatusCode::UNAUTHORIZED, "unauthorized").into_response();
     }
     if !state.shared.captures_allowed() {
@@ -385,10 +455,9 @@ async fn audio_socket(mut socket: WebSocket, shared: Shared, loopback: bool) {
 
 // --- static web client serving (embedded) ---
 
-/// MJPEG stream (multipart/x-mixed-replace). Token passed as ?token= query.
-async fn stream(State(state): State<AppState>, Query(q): Query<HashMap<String, String>>) -> Response {
-    let token = q.get("token").cloned().unwrap_or_default();
-    if !state.shared.check_token(&token) {
+/// MJPEG stream (multipart/x-mixed-replace). Authentifie par cookie.
+async fn stream(State(state): State<AppState>, headers: axum::http::HeaderMap) -> Response {
+    if !cookie_token(&headers).is_some_and(|t| state.shared.check_token(&t)) {
         return (StatusCode::UNAUTHORIZED, "unauthorized").into_response();
     }
     if !video::available() {
