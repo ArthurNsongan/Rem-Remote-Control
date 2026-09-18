@@ -10,7 +10,8 @@ import {
   Tablet,
   Monitor,
   ShieldCheck,
-  ShieldAlert,
+  Plus,
+  Minus,
   Settings as SettingsIcon,
   Check,
   Link2,
@@ -53,6 +54,8 @@ function timeAgo(unix: number) {
   return `${Math.floor(s / 3600)}h`;
 }
 
+type ConnMode = "standard" | "secure";
+
 export default function App() {
   const i18n = useI18n();
   const { t } = i18n;
@@ -62,6 +65,9 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [portInput, setPortInput] = useState("9847");
   const [copied, setCopied] = useState(false);
+  // Les deux connexions sont servies en parallele ; ceci ne choisit que celle
+  // qu'affiche le QR code.
+  const [conn, setConn] = useState<ConnMode>("standard");
 
   const refresh = useCallback(async () => {
     try {
@@ -115,9 +121,9 @@ export default function App() {
   };
 
   const copyUrl = async () => {
-    if (!info) return;
+    if (!shownUrl) return;
     try {
-      await navigator.clipboard.writeText(info.url);
+      await navigator.clipboard.writeText(shownUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -126,6 +132,10 @@ export default function App() {
   };
 
   const running = info?.running ?? false;
+
+  // La connexion chiffrée n'est proposée que si son écouteur a pu se lier.
+  const secureReady = !!info?.secure_url;
+  const shownUrl = conn === "secure" && secureReady ? info!.secure_url : info?.url || "";
 
   return (
     <div className="flex h-screen flex-col overflow-hidden">
@@ -205,6 +215,24 @@ export default function App() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col items-center gap-4 p-4 pt-2">
+                {secureReady && (
+                  <div className="grid w-full grid-cols-2 gap-1 rounded-xl border border-white/10 bg-white/[0.03] p-1">
+                    {(["standard", "secure"] as ConnMode[]).map((m) => (
+                      <button
+                        key={m}
+                        onClick={() => setConn(m)}
+                        className={cn(
+                          "rounded-lg py-1.5 text-xs font-medium transition-colors",
+                          conn === m
+                            ? "bg-primary/85 text-primary-foreground"
+                            : "text-muted-foreground hover:bg-white/[0.06]"
+                        )}
+                      >
+                        {m === "secure" ? t("conn_secure") : t("conn_standard")}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <div
                   className={cn(
                     "rounded-2xl bg-white p-3 transition-opacity",
@@ -212,7 +240,7 @@ export default function App() {
                   )}
                 >
                   <QRCodeSVG
-                    value={info?.url || "https://0.0.0.0"}
+                    value={shownUrl || "http://0.0.0.0"}
                     size={150}
                     bgColor="#ffffff"
                     fgColor="#1a0b2e"
@@ -222,20 +250,26 @@ export default function App() {
                 <div className="flex w-full items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2">
                   <Link2 className="h-4 w-4 shrink-0 text-muted-foreground" />
                   <span className="min-w-0 flex-1 truncate text-sm text-foreground/90">
-                    {info?.url || "—"}
+                    {shownUrl || "—"}
                   </span>
                   <Button variant="ghost" size="icon" onClick={copyUrl} disabled={!running}>
                     {copied ? <Check className="text-emerald-300" /> : <Copy />}
                   </Button>
                 </div>
 
-                {/* Le certificat est auto-signé : autant prévenir avant que le
-                    téléphone n'affiche un avertissement pris pour une panne. */}
-                <p className="flex items-start gap-2 text-xs text-muted-foreground">
-                  <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                  <span>{t("tls_notice")}</span>
-                </p>
-                {info?.cert_fingerprint && (
+                {/* Un avantage et un inconvénient pour chaque mode : le choix
+                    n'a de sens que si les deux faces sont visibles. */}
+                <div className="w-full space-y-1.5 text-xs">
+                  <p className="flex items-start gap-2 text-foreground/80">
+                    <Plus className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-300" />
+                    <span>{conn === "secure" ? t("conn_secure_pro") : t("conn_standard_pro")}</span>
+                  </p>
+                  <p className="flex items-start gap-2 text-muted-foreground">
+                    <Minus className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-300" />
+                    <span>{conn === "secure" ? t("conn_secure_con") : t("conn_standard_con")}</span>
+                  </p>
+                </div>
+                {conn === "secure" && info?.cert_fingerprint && (
                   <details className="w-full text-xs text-muted-foreground">
                     <summary className="cursor-pointer select-none">{t("cert_fp")}</summary>
                     <code className="mt-1 block break-all font-mono text-[10px] leading-relaxed text-foreground/70">

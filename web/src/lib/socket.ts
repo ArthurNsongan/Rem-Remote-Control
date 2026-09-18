@@ -1,18 +1,41 @@
 import type { ClientMessage, ServerMessage } from "@shared/protocol";
 
-const TOKEN_KEY = "rem_token";
+/**
+ * Le jeton de session vit dans un cookie HttpOnly pose par /pair : il est
+ * volontairement illisible ici. On interroge donc le serveur pour savoir si
+ * l'appareil est deja appaire.
+ */
+export async function isPaired(): Promise<boolean> {
+  try {
+    const r = await fetch("/api/session", { cache: "no-store" });
+    if (!r.ok) return false;
+    return ((await r.json()) as { authed?: boolean }).authed === true;
+  } catch {
+    return false;
+  }
+}
 
 function httpBase() {
   return window.location.origin;
 }
 
+/**
+ * URL de la même page servie par l'autre écouteur.
+ *
+ * Le port chiffré est celui de la connexion standard plus un ; on le déduit de
+ * l'hôte courant plutôt que de le demander au serveur, ce qui fonctionne aussi
+ * bien par nom de machine que par adresse IP.
+ */
+export function otherModeUrl(currentlySecure: boolean): string {
+  const port = Number(window.location.port || (currentlySecure ? 443 : 80));
+  const target = currentlySecure ? port - 1 : port + 1;
+  const proto = currentlySecure ? "http" : "https";
+  return `${proto}://${window.location.hostname}:${target}/`;
+}
+
 function wsUrl() {
   const proto = window.location.protocol === "https:" ? "wss" : "ws";
   return `${proto}://${window.location.host}/ws`;
-}
-
-export function savedToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
 }
 
 export interface PublicInfo {
@@ -21,6 +44,10 @@ export interface PublicInfo {
   camera_available: boolean;
   audio_available: boolean;
   captures_allowed: boolean;
+  /** Le serveur propose-t-il aussi une connexion chiffrée ? */
+  secure_available: boolean;
+  /** La page courante est-elle servie par l'écouteur chiffré ? */
+  secure: boolean;
 }
 
 export async function fetchPublic(): Promise<PublicInfo> {
@@ -35,17 +62,14 @@ export async function fetchPublic(): Promise<PublicInfo> {
       camera_available: false,
       audio_available: false,
       captures_allowed: false,
+      secure_available: false,
+      secure: false,
     };
   }
 }
 
-/**
- * Ferme la session des deux cotes : le serveur revoque le jeton et efface le
- * cookie. Sans l'appel reseau, l'appareil resterait autorise a lire les flux
- * malgre une deconnexion apparente dans l'interface.
- */
+/** Revoque la session cote serveur et efface le cookie. */
 export async function clearToken() {
-  localStorage.removeItem(TOKEN_KEY);
   try {
     await fetch("/logout", { method: "POST" });
   } catch {
@@ -66,7 +90,7 @@ export class PairError extends Error {
   }
 }
 
-export async function pair(pin: string): Promise<string> {
+export async function pair(pin: string): Promise<void> {
   let res: Response;
   try {
     res = await fetch(`${httpBase()}/pair`, {
@@ -85,27 +109,19 @@ export async function pair(pin: string): Promise<string> {
     const body = (await res.json().catch(() => ({}))) as { remaining?: number };
     throw new PairError("invalid", 0, body.remaining ?? 0);
   }
-  const data = (await res.json()) as { token: string };
-  localStorage.setItem(TOKEN_KEY, data.token);
-  return data.token;
+  // Rien a stocker : le cookie pose par la reponse fait foi.
 }
 
 export type ConnState = "connecting" | "open" | "closed";
 
 export class RemSocket {
   private ws: WebSocket | null = null;
-  private token: string;
   private onState: (s: ConnState) => void;
   private onAuthFail?: () => void;
   private closedByUser = false;
   private retry = 0;
 
-  constructor(
-    token: string,
-    onState: (s: ConnState) => void,
-    onAuthFail?: () => void
-  ) {
-    this.token = token;
+  constructor(onState: (s: ConnState) => void, onAuthFail?: () => void) {
     this.onState = onState;
     this.onAuthFail = onAuthFail;
   }
@@ -116,9 +132,10 @@ export class RemSocket {
     const ws = new WebSocket(wsUrl());
     this.ws = ws;
 
+    // L'authentification a eu lieu a la poignee de main, via le cookie :
+    // un upgrade refuse se traduit par une fermeture immediate.
     ws.onopen = () => {
       this.retry = 0;
-      ws.send(JSON.stringify({ type: "auth", token: this.token }));
     };
     ws.onmessage = (ev) => {
       try {

@@ -37,6 +37,9 @@ struct AppState {
     // enigo::Enigo is not Send/Sync, so input runs on a dedicated thread fed by
     // this channel. The sender is Send + Sync + Clone, which axum's state requires.
     input_tx: mpsc::UnboundedSender<ClientMessage>,
+    /// Vrai pour le routeur servi en TLS. Determine le drapeau `Secure` du
+    /// cookie : pose sur l'ecouteur HTTP, il ne serait jamais renvoye.
+    secure: bool,
 }
 
 /// Nom du cookie de session pose a l'appairage.
@@ -110,11 +113,34 @@ fn apply(e: &mut Enigo, cmd: ClientMessage) {
             Some(next) => input::slide(e, next),
             None => {}
         },
-        ClientMessage::Auth { .. } | ClientMessage::Ping => {}
+        ClientMessage::Ping => {}
     }
 }
 
-/// Starts the axum server on 0.0.0.0:port. Returns once bound (or with an error).
+/// Port de la connexion chiffree, juste au-dessus du port standard.
+pub fn secure_port(port: u16) -> u16 {
+    port.saturating_add(1)
+}
+
+fn build_router(state: AppState) -> Router {
+    Router::new()
+        .route("/pair", post(pair))
+        .route("/logout", post(logout))
+        .route("/ws", get(ws_handler))
+        .route("/api/public", get(api_public))
+        .route("/api/session", get(api_session))
+        .route("/stream", get(stream))
+        .route("/camera", get(camera_stream))
+        .route("/audio", get(audio_ws))
+        .fallback(static_handler)
+        .with_state(state)
+}
+
+/// Demarre les deux ecouteurs : standard sur `port`, chiffre sur `port + 1`.
+///
+/// Les deux servent le meme client. C'est l'utilisateur qui choisit, depuis la
+/// page ou depuis le QR code de l'hote ; aucun des deux n'est presente comme
+/// une version degradee de l'autre.
 pub async fn start(shared: Shared, port: u16, cert_dir: std::path::PathBuf) -> Result<(), String> {
     // Verify enigo can init before binding, then hand a fresh instance to the worker.
     input::new_enigo()?;
@@ -133,21 +159,17 @@ pub async fn start(shared: Shared, port: u16, cert_dir: std::path::PathBuf) -> R
         }
     });
 
-    let state = AppState {
-        shared: shared.clone(),
-        input_tx,
+    let routes = |secure: bool| {
+        let state = AppState {
+            shared: shared.clone(),
+            input_tx: input_tx.clone(),
+            secure,
+        };
+        build_router(state)
     };
 
-    let app = Router::new()
-        .route("/pair", post(pair))
-        .route("/logout", post(logout))
-        .route("/ws", get(ws_handler))
-        .route("/api/public", get(api_public))
-        .route("/stream", get(stream))
-        .route("/camera", get(camera_stream))
-        .route("/audio", get(audio_ws))
-        .fallback(static_handler)
-        .with_state(state);
+    let app_plain = routes(false);
+    let app_tls = routes(true);
 
     // `ring` plutot que le fournisseur par defaut : voir Cargo.toml.
     let _ = rustls::crypto::ring::default_provider().install_default();
@@ -158,13 +180,26 @@ pub async fn start(shared: Shared, port: u16, cert_dir: std::path::PathBuf) -> R
         .await
         .map_err(|e| format!("tls: configuration rustls: {e}"))?;
 
-    // On lie nous-memes la socket pour que « port deja utilise » remonte a
-    // l'interface au lieu d'echouer plus tard dans la tache detachee.
-    let addr = SocketAddr::from(([0, 0, 0, 0], port));
-    let listener = std::net::TcpListener::bind(addr).map_err(|e| format!("bind {addr}: {e}"))?;
-    listener
-        .set_nonblocking(true)
-        .map_err(|e| format!("bind {addr}: {e}"))?;
+    // On lie nous-memes les sockets pour que « port deja utilise » remonte a
+    // l'interface au lieu d'echouer plus tard dans une tache detachee.
+    let bind = |p: u16| -> Result<std::net::TcpListener, String> {
+        let addr = SocketAddr::from(([0, 0, 0, 0], p));
+        let l = std::net::TcpListener::bind(addr).map_err(|e| format!("bind {addr}: {e}"))?;
+        l.set_nonblocking(true)
+            .map_err(|e| format!("bind {addr}: {e}"))?;
+        Ok(l)
+    };
+    let listener_plain = bind(port)?;
+    // La connexion chiffree est un complement : si son port est pris, on sert
+    // quand meme la connexion standard plutot que de refuser de demarrer.
+    let listener_tls = match bind(secure_port(port)) {
+        Ok(l) => Some(l),
+        Err(e) => {
+            eprintln!("tls: {e} - connexion chiffree indisponible");
+            None
+        }
+    };
+    shared.set_secure_available(listener_tls.is_some());
 
     let (tx, rx) = oneshot::channel::<()>();
     *shared.0.shutdown.lock().unwrap() = Some(tx);
@@ -180,11 +215,23 @@ pub async fn start(shared: Shared, port: u16, cert_dir: std::path::PathBuf) -> R
         handle_for_stop.graceful_shutdown(Some(std::time::Duration::from_secs(1)));
     });
 
+    if let Some(listener_tls) = listener_tls {
+        let handle_tls = handle.clone();
+        tokio::spawn(async move {
+            let server = axum_server::from_tcp_rustls(listener_tls, config)
+                .handle(handle_tls)
+                .serve(app_tls.into_make_service_with_connect_info::<SocketAddr>());
+            if let Err(e) = server.await {
+                eprintln!("server error (tls): {e}");
+            }
+        });
+    }
+
     let shared_for_task = shared.clone();
     tokio::spawn(async move {
-        let server = axum_server::from_tcp_rustls(listener, config)
+        let server = axum_server::from_tcp(listener_plain)
             .handle(handle)
-            .serve(app.into_make_service_with_connect_info::<SocketAddr>());
+            .serve(app_plain.into_make_service_with_connect_info::<SocketAddr>());
         if let Err(e) = server.await {
             eprintln!("server error: {e}");
         }
@@ -207,12 +254,12 @@ async fn pair(
 ) -> Response {
     match state.shared.verify_pin(addr.ip(), body.pin.trim()) {
         PairOutcome::Ok(token) => {
-            // Le cookie authentifie les flux <img> et le WebSocket audio ; le
-            // corps sert au message Auth du WebSocket de controle. Secure : le
-            // serveur ne repond qu'en TLS, le cookie ne doit jamais partir en
-            // clair si un client tentait du HTTP.
+            // Le cookie authentifie tout le reste : flux <img>, WebSockets.
+            // `Secure` uniquement sur l'ecouteur TLS, sinon le navigateur ne le
+            // renverrait jamais sur la connexion standard.
+            let secure = if state.secure { " Secure;" } else { "" };
             let cookie = format!(
-                "{TOKEN_COOKIE}={token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=86400"
+                "{TOKEN_COOKIE}={token}; Path=/; HttpOnly;{secure} SameSite=Strict; Max-Age=86400"
             );
             (
                 [(header::SET_COOKIE, cookie)],
@@ -242,9 +289,20 @@ async fn logout(State(state): State<AppState>, headers: axum::http::HeaderMap) -
     if let Some(token) = cookie_token(&headers) {
         state.shared.revoke_token(&token);
     }
-    let cleared =
-        format!("{TOKEN_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0");
+    // Sans `Secure`, l'effacement vaut pour les deux ecouteurs.
+    let cleared = format!("{TOKEN_COOKIE}=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0");
     ([(header::SET_COOKIE, cleared)], Json(json!({ "ok": true }))).into_response()
+}
+
+/// L'appareil est-il deja appaire ?
+///
+/// Le jeton vit dans un cookie, illisible au JavaScript. Le client a besoin de
+/// cette reponse pour savoir s'il doit afficher l'ecran de code PIN - en
+/// particulier apres un passage de la connexion standard a la connexion
+/// chiffree, qui change d'origine et vide donc le stockage local.
+async fn api_session(State(state): State<AppState>, headers: axum::http::HeaderMap) -> Response {
+    let authed = cookie_token(&headers).is_some_and(|t| state.shared.check_token(&t));
+    Json(json!({ "authed": authed })).into_response()
 }
 
 async fn ws_handler(
@@ -256,6 +314,11 @@ async fn ws_handler(
     if !same_origin(&headers) {
         return (StatusCode::FORBIDDEN, "bad origin").into_response();
     }
+    // Authentifie des la poignee de main, comme les autres points d'entree :
+    // le jeton n'a plus a transiter dans un message applicatif.
+    if !cookie_token(&headers).is_some_and(|t| state.shared.check_token(&t)) {
+        return (StatusCode::UNAUTHORIZED, "unauthorized").into_response();
+    }
     let ua = headers
         .get(header::USER_AGENT)
         .and_then(|v| v.to_str().ok())
@@ -265,27 +328,7 @@ async fn ws_handler(
 }
 
 async fn handle_socket(mut socket: WebSocket, state: AppState, addr: SocketAddr, ua: String) {
-    // First message must authenticate.
-    let authed = match socket.next().await {
-        Some(Ok(Message::Text(txt))) => match serde_json::from_str::<ClientMessage>(&txt) {
-            Ok(ClientMessage::Auth { token }) => state.shared.check_token(&token),
-            _ => false,
-        },
-        _ => false,
-    };
-
-    if !authed {
-        let _ = socket
-            .send(Message::Text(
-                serde_json::to_string(&ServerMessage::Error {
-                    msg: "unauthorized".into(),
-                })
-                .unwrap(),
-            ))
-            .await;
-        return;
-    }
-
+    // L'authentification a eu lieu a la poignee de main (cookie).
     let _ = socket
         .send(Message::Text(
             serde_json::to_string(&ServerMessage::Authed).unwrap(),
@@ -326,6 +369,8 @@ async fn api_public(State(state): State<AppState>) -> Response {
         "camera_available": camera::available(),
         "audio_available": audio::available(),
         "captures_allowed": state.shared.captures_allowed(),
+        "secure_available": state.shared.secure_available(),
+        "secure": state.secure,
     }))
     .into_response()
 }

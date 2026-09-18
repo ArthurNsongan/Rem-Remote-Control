@@ -22,7 +22,7 @@ import { Button } from "@shared/ui/button";
 import { cn } from "@shared/cn";
 import {
   RemSocket,
-  savedToken,
+  isPaired,
   clearToken,
   fetchPublic,
   type ConnState,
@@ -37,6 +37,7 @@ import SystemPanel from "./components/SystemPanel";
 import VideoScreen from "./components/VideoScreen";
 import CameraView from "./components/CameraView";
 import AudioListen from "./components/AudioListen";
+import ConnectionMode from "./components/ConnectionMode";
 import { I18nProvider, useI18n, type ClientI18n, type ClientKey } from "./i18n";
 
 type Mode = "traditional" | "custom";
@@ -93,7 +94,8 @@ export default function App() {
 
 function AppInner({ i18n }: { i18n: ClientI18n }) {
   const { t, lang, setLang } = i18n;
-  const [token, setToken] = useState<string | null>(savedToken());
+  // null = on ne sait pas encore (appel /api/session en cours).
+  const [paired, setPaired] = useState<boolean | null>(null);
   const [state, setState] = useState<ConnState>("closed");
   const [mode, setMode] = useState<Mode>(
     (localStorage.getItem("rem_mode") as Mode) || "traditional"
@@ -105,20 +107,43 @@ function AppInner({ i18n }: { i18n: ClientI18n }) {
     camera_available: false,
     audio_available: false,
     captures_allowed: false,
+    secure_available: false,
+    secure: false,
   });
   const sockRef = useRef<RemSocket | null>(null);
 
+  // Le jeton etant dans un cookie HttpOnly, seul le serveur peut dire si cet
+  // appareil est appaire. C'est aussi ce qui permet de passer d'une connexion
+  // a l'autre sans redemander le code PIN.
   useEffect(() => {
-    if (!token) return;
-    const sock = new RemSocket(token, setState, () => setToken(null));
+    let alive = true;
+    isPaired().then((ok) => alive && setPaired(ok));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!paired) return;
+    const sock = new RemSocket(setState, () => setPaired(false));
     sockRef.current = sock;
     sock.connect();
     return () => sock.close();
-  }, [token]);
+  }, [paired]);
+
+  // Un premier appel des le chargement : le choix de connexion doit etre
+  // propose meme sans module visuel actif.
+  useEffect(() => {
+    let alive = true;
+    fetchPublic().then((p) => alive && setPub(p));
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   // poll video availability when relevant
   useEffect(() => {
-    if (!token) return;
+    if (!paired) return;
     const needs =
       mode === "custom" &&
       (modules.video || modules.camera || modules.audio_pc || modules.mic);
@@ -134,7 +159,7 @@ function AppInner({ i18n }: { i18n: ClientI18n }) {
       alive = false;
       clearInterval(t);
     };
-  }, [token, mode, modules.video, modules.camera, modules.audio_pc, modules.mic]);
+  }, [paired, mode, modules.video, modules.camera, modules.audio_pc, modules.mic]);
 
   const send = useCallback<(msg: ClientMessage) => void>((msg) => {
     sockRef.current?.send(msg);
@@ -143,7 +168,7 @@ function AppInner({ i18n }: { i18n: ClientI18n }) {
   const logout = () => {
     sockRef.current?.close();
     clearToken();
-    setToken(null);
+    setPaired(false);
   };
 
   const setModeP = (m: Mode) => {
@@ -165,7 +190,8 @@ function AppInner({ i18n }: { i18n: ClientI18n }) {
     return <Badge variant="offline">{t("disconnected")}</Badge>;
   }, [state, t]);
 
-  if (!token) return <Pairing onPaired={() => setToken(savedToken())} />;
+  if (paired === null) return null; // evite un flash de l'ecran de code PIN
+  if (!paired) return <Pairing onPaired={() => setPaired(true)} />;
 
   const activeModules = MODULES.filter((m) => modules[m.id]);
   // le trackpad ne remplit l'écran que s'il n'y a pas de gros module visuel
@@ -198,6 +224,10 @@ function AppInner({ i18n }: { i18n: ClientI18n }) {
           </Button>
         </div>
       </header>
+
+      <div className="relative mb-3">
+        <ConnectionMode pub={pub} />
+      </div>
 
       {/* Mode switch */}
       <div className="relative mb-3 grid grid-cols-2 gap-1.5 rounded-2xl glass p-1.5">

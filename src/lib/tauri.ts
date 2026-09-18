@@ -15,6 +15,7 @@ export interface ServerInfo {
   mic_active: boolean;
   sys_active: boolean;
   cert_fingerprint: string;
+  secure_url: string;
 }
 
 export interface DeviceInfo {

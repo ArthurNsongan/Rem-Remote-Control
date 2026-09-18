@@ -18,8 +18,14 @@ const dict = {
     stop: "Arrêter",
 
     connection: "Connexion",
-    tls_notice:
-      "À la première connexion, le téléphone affichera un avertissement de sécurité. C'est normal : le certificat est auto-signé. Continue.",
+    conn_standard: "Standard",
+    conn_secure: "Chiffrée",
+    conn_standard_pro: "Connexion immédiate, aucune étape sur le téléphone.",
+    conn_standard_con:
+      "Le trafic circule sans chiffrement : sur un réseau partagé ou public, préfère l'autre mode.",
+    conn_secure_pro: "Tout le trafic est chiffré, y compris le code PIN et l'écran.",
+    conn_secure_con:
+      "Le téléphone demande de confirmer le certificat de cette machine, une fois par appareil.",
     cert_fp: "Empreinte du certificat",
     pin: "Code PIN",
     regenerate: "Régénérer",
@@ -95,8 +101,14 @@ const dict = {
     stop: "Stop",
 
     connection: "Connection",
-    tls_notice:
-      "On first connection your phone will show a security warning. That's expected — the certificate is self-signed. Go ahead.",
+    conn_standard: "Standard",
+    conn_secure: "Encrypted",
+    conn_standard_pro: "Connects instantly, nothing extra to do on the phone.",
+    conn_standard_con:
+      "Traffic is not encrypted: on a shared or public network, prefer the other mode.",
+    conn_secure_pro: "All traffic is encrypted, including the PIN and the screen.",
+    conn_secure_con:
+      "The phone asks you to confirm this machine's certificate, once per device.",
     cert_fp: "Certificate fingerprint",
     pin: "PIN code",
     regenerate: "Regenerate",

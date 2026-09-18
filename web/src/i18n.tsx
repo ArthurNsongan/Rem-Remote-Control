@@ -27,6 +27,15 @@ const dict = {
     mode_custom: "Custom",
     pick_module: "Choisis au moins un module ci-dessus",
 
+    conn_on_standard: "Connexion standard",
+    conn_on_secure: "Connexion chiffrée",
+    conn_to_secure: "Passer en connexion chiffrée",
+    conn_to_standard: "Revenir à la connexion standard",
+    conn_standard_pro: "Connexion immédiate, rien à confirmer.",
+    conn_standard_con: "Le trafic n'est pas chiffré sur le réseau.",
+    conn_secure_pro: "Tout le trafic est chiffré.",
+    conn_secure_con: "Ton navigateur demande de confirmer le certificat du PC, une seule fois.",
+
     // Appairage
     pair_prompt: "Entre le code PIN affiché sur le PC",
     pair_bad: "Code incorrect, réessaie",
@@ -120,6 +129,15 @@ const dict = {
     mode_traditional: "Traditional",
     mode_custom: "Custom",
     pick_module: "Pick at least one module above",
+
+    conn_on_standard: "Standard connection",
+    conn_on_secure: "Encrypted connection",
+    conn_to_secure: "Switch to an encrypted connection",
+    conn_to_standard: "Back to the standard connection",
+    conn_standard_pro: "Connects instantly, nothing to confirm.",
+    conn_standard_con: "Traffic is not encrypted on the network.",
+    conn_secure_pro: "All traffic is encrypted.",
+    conn_secure_con: "Your browser asks you to confirm the PC's certificate, once.",
 
     pair_prompt: "Enter the PIN shown on the PC",
     pair_bad: "Wrong code, try again",

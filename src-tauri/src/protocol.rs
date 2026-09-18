@@ -56,7 +56,6 @@ pub enum SpecialKey {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ClientMessage {
-    Auth { token: String },
     MouseMove { dx: f64, dy: f64 },
     MouseAbs { x: f64, y: f64 },
     MouseClick { button: MouseButton },

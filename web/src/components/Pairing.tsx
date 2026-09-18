@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Activity, ShieldCheck, Lock } from "lucide-react";
 import { Button } from "@shared/ui/button";
-import { pair, PairError } from "../lib/socket";
+import { pair, PairError, fetchPublic, type PublicInfo } from "../lib/socket";
+import ConnectionMode from "./ConnectionMode";
 import { useT, type ClientKey } from "../i18n";
 
 export default function Pairing({ onPaired }: { onPaired: () => void }) {
@@ -11,6 +12,15 @@ export default function Pairing({ onPaired }: { onPaired: () => void }) {
   const [error, setError] = useState<{ k: ClientKey; n?: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const [lock, setLock] = useState(0);
+  const [pub, setPub] = useState<PublicInfo | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    fetchPublic().then((p) => alive && setPub(p));
+    return () => {
+      alive = false;
+    };
+  }, []);
   const refs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Décompte du verrouillage anti-brute-force renvoyé par le serveur.
@@ -115,6 +125,12 @@ export default function Pairing({ onPaired }: { onPaired: () => void }) {
           <div className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2 text-center text-sm text-destructive">
             <Lock className="h-4 w-4 shrink-0" />
             <span>{t("pair_locked", { s: lock })}</span>
+          </div>
+        )}
+
+        {pub && (
+          <div className="mt-5">
+            <ConnectionMode pub={pub} />
           </div>
         )}
 

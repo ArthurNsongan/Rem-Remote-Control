@@ -39,7 +39,6 @@ export type SpecialKey =
   | "paste";
 
 export type ClientMessage =
-  | { type: "auth"; token: string }
   | { type: "mouse_move"; dx: number; dy: number }
   | { type: "mouse_abs"; x: number; y: number }
   | { type: "mouse_click"; button: MouseButton }

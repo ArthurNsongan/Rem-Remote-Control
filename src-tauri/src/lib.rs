@@ -32,6 +32,8 @@ pub struct ServerInfo {
     mic_active: bool,
     sys_active: bool,
     cert_fingerprint: String,
+    /// URL de la connexion chiffree, vide si l'ecouteur TLS n'a pas pu se lier.
+    secure_url: String,
 }
 
 fn local_ip() -> String {
@@ -48,8 +50,7 @@ fn build_info(shared: &Shared) -> ServerInfo {
         ip: ip.clone(),
         port,
         pin: shared.pin(),
-        // https : le serveur presente un certificat auto-signe (voir tls.rs).
-        url: format!("https://{ip}:{port}"),
+        url: format!("http://{ip}:{port}"),
         video_enabled: shared.video_enabled(),
         video_available: video::available(),
         camera_available: camera::available(),
@@ -59,6 +60,11 @@ fn build_info(shared: &Shared) -> ServerInfo {
         mic_active: shared.mic_active(),
         sys_active: shared.sys_active(),
         cert_fingerprint: shared.cert_fingerprint(),
+        secure_url: if shared.secure_available() {
+            format!("https://{ip}:{}", server::secure_port(port))
+        } else {
+            String::new()
+        },
     }
 }
 

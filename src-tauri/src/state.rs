@@ -61,6 +61,8 @@ pub struct Inner {
     /// Empreinte du certificat TLS en cours, vide tant que le serveur n'a pas
     /// demarre.
     cert_fingerprint: Mutex<String>,
+    /// L'ecouteur chiffre a-t-il pu se lier ?
+    secure_available: AtomicBool,
     /// Limitation du brute-force sur /pair, par IP source.
     pair_attempts: Mutex<HashMap<IpAddr, Attempts>>,
     next_id: AtomicU64,
@@ -104,6 +106,7 @@ impl Shared {
             sys_active: AtomicU64::new(0),
             shutdown: Mutex::new(None),
             cert_fingerprint: Mutex::new(String::new()),
+            secure_available: AtomicBool::new(false),
             pair_attempts: Mutex::new(HashMap::new()),
             next_id: AtomicU64::new(1),
         }))
@@ -221,6 +224,14 @@ impl Shared {
         PairOutcome::Invalid {
             remaining: MAX_PAIR_FAILS - entry.fails,
         }
+    }
+
+    pub fn secure_available(&self) -> bool {
+        self.0.secure_available.load(Ordering::SeqCst)
+    }
+
+    pub fn set_secure_available(&self, on: bool) {
+        self.0.secure_available.store(on, Ordering::SeqCst);
     }
 
     pub fn cert_fingerprint(&self) -> String {
