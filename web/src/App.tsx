@@ -37,7 +37,6 @@ import SystemPanel from "./components/SystemPanel";
 import VideoScreen from "./components/VideoScreen";
 import CameraView from "./components/CameraView";
 import AudioListen from "./components/AudioListen";
-import ConnectionMode from "./components/ConnectionMode";
 import { I18nProvider, useI18n, type ClientI18n, type ClientKey } from "./i18n";
 
 type Mode = "traditional" | "custom";
@@ -131,16 +130,6 @@ function AppInner({ i18n }: { i18n: ClientI18n }) {
     return () => sock.close();
   }, [paired]);
 
-  // Un premier appel des le chargement : le choix de connexion doit etre
-  // propose meme sans module visuel actif.
-  useEffect(() => {
-    let alive = true;
-    fetchPublic().then((p) => alive && setPub(p));
-    return () => {
-      alive = false;
-    };
-  }, []);
-
   // poll video availability when relevant
   useEffect(() => {
     if (!paired) return;
@@ -224,10 +213,6 @@ function AppInner({ i18n }: { i18n: ClientI18n }) {
           </Button>
         </div>
       </header>
-
-      <div className="relative mb-3">
-        <ConnectionMode pub={pub} />
-      </div>
 
       {/* Mode switch */}
       <div className="relative mb-3 grid grid-cols-2 gap-1.5 rounded-2xl glass p-1.5">
