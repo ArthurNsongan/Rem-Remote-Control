@@ -77,7 +77,7 @@ export function UpdateBanner({ up, t }: { up: Updater; t: T }) {
 export function UpdateSettings({ up, t }: { up: Updater; t: T }) {
   const s = up.status;
   return (
-    <div className="flex flex-col gap-2 border-t border-white/10 pt-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
         <p className="text-sm">{t("up_version", { v: up.current || "…" })}</p>
         <p className="text-xs text-muted-foreground">

@@ -20,10 +20,13 @@ export default function VideoScreen({
   send,
   enabled,
   available,
+  fill,
 }: {
   send: Send;
   enabled: boolean;
   available: boolean;
+  /** Scène plein cadre : le flux prend toute la hauteur disponible. */
+  fill?: boolean;
 }) {
   const t = useT();
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -130,10 +133,10 @@ export default function VideoScreen({
   };
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className={fill ? "flex min-h-0 flex-1 flex-col gap-3" : "flex flex-col gap-3"}>
       <div
         ref={wrapRef}
-        className={`video-wrap glass relative ${fs ? "fs" : ""}`}
+        className={`video-wrap glass relative ${fs ? "fs" : ""} ${fill ? "plein" : ""}`}
         onPointerDown={onDown}
         onPointerMove={onMove}
         onPointerUp={onUp}

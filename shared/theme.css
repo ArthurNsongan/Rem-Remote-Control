@@ -50,6 +50,10 @@
       radial-gradient(60% 50% at 15% 0%, hsl(270 90% 30% / 0.35) 0%, transparent 60%),
       radial-gradient(50% 50% at 100% 10%, hsl(290 90% 40% / 0.28) 0%, transparent 55%),
       radial-gradient(70% 60% at 50% 110%, hsl(255 90% 35% / 0.35) 0%, transparent 60%);
+    /* Le « tirer pour rafraîchir » d'Android se déclenchait au moindre geste
+       vers le bas parti du haut d'une scène : recharger la page au milieu
+       d'un glissé sur le trackpad est la pire chose qui puisse arriver ici. */
+    overscroll-behavior: none;
     background-attachment: fixed;
     overflow-x: hidden;
   }
@@ -143,4 +147,13 @@
 
 .touch-none {
   touch-action: none;
+}
+
+/* Scène plein cadre du client mobile : le flux prend toute la hauteur
+   disponible au lieu d'un cadre 16/9 qui laisserait les deux tiers de
+   l'écran vides. L'image reste en object-contain, rien n'est déformé. */
+.video-wrap.plein {
+  aspect-ratio: auto;
+  flex: 1;
+  min-height: 0;
 }
