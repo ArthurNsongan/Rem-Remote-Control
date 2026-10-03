@@ -100,12 +100,20 @@ export default function LiveKeyboard({ send }: { send: Send }) {
         <Button variant="glass" onPointerDown={() => special("enter")}>
           <CornerDownLeft />
         </Button>
-        <div />
-        <Button variant="glass" onPointerDown={() => special("up")}>
+      </div>
+
+      {/* Pavé de flèches en T inversé, sur sa propre grille de 3 colonnes.
+          Il partageait la grille de 4 colonnes de la rangée du dessus : ses
+          cases vides de calage décalaient chaque flèche d'une colonne. */}
+      <div className="mx-auto grid w-full max-w-[15rem] grid-cols-3 gap-2">
+        <Button
+          variant="glass"
+          className="col-start-2"
+          onPointerDown={() => special("up")}
+        >
           <ArrowUp />
         </Button>
-        <div />
-        <Button variant="glass" onPointerDown={() => special("left")}>
+        <Button variant="glass" className="col-start-1" onPointerDown={() => special("left")}>
           <ArrowLeft />
         </Button>
         <Button variant="glass" onPointerDown={() => special("down")}>
