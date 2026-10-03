@@ -6,9 +6,30 @@ import { createI18n, type I18n } from "@shared/i18n";
  */
 const dict = {
   fr: {
-    subtitle: "Contrôle à distance · LAN",
-    online: "En ligne",
-    offline: "Hors ligne",
+
+    // Navigation par sections
+    nav_connexion: "Connexion",
+    nav_appareils: "Appareils",
+    nav_partage: "Partage",
+    nav_reglages: "Réglages",
+    page_connexion_d: "Scanne le QR code ou saisis l'adresse depuis ton téléphone.",
+    page_appareils_d: "Les appareils actuellement connectés à cette machine.",
+    page_partage_d: "Ce que le téléphone peut voir et entendre de ce PC.",
+    page_reglages_d: "Réseau et mises à jour.",
+
+    // Bandeau d'état
+    address: "ADRESSE",
+    copy_url: "Copier l'adresse",
+    copied: "COPIÉE",
+    online_n: "{n} en ligne",
+
+    howto: "Comment se connecter",
+    howto_1: "Démarre le serveur avec le bouton en haut à gauche.",
+    howto_2: "Sur le téléphone, connecté au même Wi-Fi, scanne le QR code.",
+    howto_3: "Saisis le code PIN affiché ici.",
+    pin_regen_d: "Régénérer le code n'interrompt pas les appareils déjà connectés.",
+    application: "Application",
+    updates: "Mises à jour",
 
     server_on: "Serveur actif",
     server_off: "Serveur arrêté",
@@ -16,8 +37,6 @@ const dict = {
     server_off_hint: "Démarre le serveur pour autoriser les connexions",
     start: "Démarrer",
     stop: "Arrêter",
-
-    connection: "Connexion",
     conn_standard: "Standard",
     conn_secure: "Chiffrée",
     conn_standard_pro: "Connexion immédiate, aucune étape sur le téléphone.",
@@ -36,7 +55,7 @@ const dict = {
     screen_share: "Partage d'écran",
     active: "Actif",
     inactive: "Inactif",
-    video_toggle: "Autoriser le flux vidéo (mode custom)",
+    video_toggle: "Autoriser le partage d'écran vers le téléphone",
     video_yes: "Le client peut voir l'écran et viser au doigt",
     video_no: "Capture indisponible sur cette machine",
 
@@ -51,8 +70,6 @@ const dict = {
     live: "en direct",
     ready: "prêt",
     unavailable: "indisponible",
-
-    settings: "Réglages",
     port: "Port du serveur",
     apply: "Appliquer",
     port_locked: "Arrête le serveur pour changer le port",
@@ -89,9 +106,28 @@ const dict = {
     up_check: "Rechercher une mise à jour",
   },
   en: {
-    subtitle: "Remote control · LAN",
-    online: "Online",
-    offline: "Offline",
+
+    nav_connexion: "Connection",
+    nav_appareils: "Devices",
+    nav_partage: "Sharing",
+    nav_reglages: "Settings",
+    page_connexion_d: "Scan the QR code or type the address on your phone.",
+    page_appareils_d: "Devices currently connected to this machine.",
+    page_partage_d: "What the phone can see and hear from this PC.",
+    page_reglages_d: "Network and updates.",
+
+    address: "ADDRESS",
+    copy_url: "Copy the address",
+    copied: "COPIED",
+    online_n: "{n} online",
+
+    howto: "How to connect",
+    howto_1: "Start the server with the button at the top left.",
+    howto_2: "On your phone, on the same Wi-Fi, scan the QR code.",
+    howto_3: "Enter the PIN shown here.",
+    pin_regen_d: "Regenerating the code doesn't disconnect devices already paired.",
+    application: "Application",
+    updates: "Updates",
 
     server_on: "Server running",
     server_off: "Server stopped",
@@ -99,8 +135,6 @@ const dict = {
     server_off_hint: "Start the server to allow connections",
     start: "Start",
     stop: "Stop",
-
-    connection: "Connection",
     conn_standard: "Standard",
     conn_secure: "Encrypted",
     conn_standard_pro: "Connects instantly, nothing extra to do on the phone.",
@@ -119,7 +153,7 @@ const dict = {
     screen_share: "Screen sharing",
     active: "On",
     inactive: "Off",
-    video_toggle: "Allow the video stream (custom mode)",
+    video_toggle: "Allow screen sharing to the phone",
     video_yes: "The client can see the screen and point at it",
     video_no: "Screen capture unavailable on this machine",
 
@@ -134,8 +168,6 @@ const dict = {
     live: "live",
     ready: "ready",
     unavailable: "unavailable",
-
-    settings: "Settings",
     port: "Server port",
     apply: "Apply",
     port_locked: "Stop the server to change the port",

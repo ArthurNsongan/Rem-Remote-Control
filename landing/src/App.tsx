@@ -10,7 +10,6 @@ import {
   Smartphone,
   ShieldCheck,
   PanelsTopLeft,
-  Wifi,
   QrCode,
   Hand,
   AppWindow,
@@ -20,6 +19,7 @@ import {
 import { Button } from "@shared/ui/button";
 import { Card, CardContent } from "@shared/ui/card";
 import { Badge } from "@shared/ui/badge";
+import { RemMark } from "@shared/ui/rem-mark";
 import { cn } from "@shared/cn";
 import { useLang, type Key } from "./i18n";
 import { useLatestRelease, GITHUB_URL, RELEASES_URL } from "./useRelease";
@@ -85,9 +85,7 @@ export default function App() {
       {/* NAV */}
       <header className="relative z-20 mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
         <a href="#top" className="flex items-center gap-2.5">
-          <div className="grid h-10 w-10 place-items-center rounded-2xl bg-gradient-to-br from-primary to-accent shadow-glow">
-            <Wifi className="h-5 w-5 text-white" />
-          </div>
+          <RemMark className="h-10 w-10 rounded-[9px] shadow-glow" />
           <span className="font-sans text-lg font-bold tracking-tight">REM</span>
         </a>
 
@@ -283,9 +281,7 @@ export default function App() {
       <footer className="relative z-10 border-t border-white/10">
         <div className="mx-auto flex max-w-6xl flex-col items-center gap-2 px-5 py-8 text-center sm:px-8">
           <div className="flex items-center gap-2">
-            <div className="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-primary to-accent">
-              <Wifi className="h-4 w-4 text-white" />
-            </div>
+            <RemMark className="h-7 w-7" />
             <span className="font-sans font-bold tracking-tight">REM</span>
           </div>
           <p className="text-xs text-muted-foreground">{t("footer_tag")}</p>

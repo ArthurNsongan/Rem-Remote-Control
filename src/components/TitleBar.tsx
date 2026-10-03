@@ -9,7 +9,6 @@ import {
   Square,
   Copy as RestoreIcon,
   X,
-  Activity,
   RefreshCw,
   Github,
   Info,
@@ -18,6 +17,7 @@ import {
   Languages,
 } from "lucide-react";
 import { cn } from "@shared/cn";
+import { RemMark } from "@shared/ui/rem-mark";
 import type { AppI18n } from "../i18n";
 
 const REPO_URL = "https://github.com/ArthurNsongan/Rem-Remote-Control";
@@ -148,9 +148,7 @@ export default function TitleBar({ i18n }: { i18n: AppI18n }) {
           data-tauri-drag-region
           className="flex select-none items-center gap-2 pl-1"
         >
-          <div className="grid h-6 w-6 place-items-center rounded-md bg-gradient-to-br from-primary to-accent">
-            <Activity className="pointer-events-none h-3.5 w-3.5 text-white" />
-          </div>
+          <RemMark className="pointer-events-none h-6 w-6" />
           <span className="pointer-events-none font-display text-xs tracking-[0.25em] text-foreground/90">
             REM
           </span>
