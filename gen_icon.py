@@ -1,71 +1,66 @@
-"""Génère le logo REM (carré dégradé violet, coins arrondis, 'R' Space Grotesk)."""
+"""Génère le logo REM : un toucher sur le trackpad, en relief.
+
+Tuile violette aux coins arrondis, un point blanc entouré de deux ondes, une
+ombre décalée sous le point et un reflet en haut de la tuile. Le relief passe
+par des aplats superposés plutôt que par du flou, pour rester net en 16 px.
+
+Le dessin est fait en 120 unités, puis rendu à 4× la taille finale et réduit :
+Pillow n'anticrénelle pas ses cercles, le suréchantillonnage s'en charge.
+"""
 from pathlib import Path
-from PIL import Image, ImageDraw, ImageFont
-from fontTools.ttLib import TTFont
+from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).parent
-WOFF2 = ROOT / "node_modules/@fontsource/space-grotesk/files/space-grotesk-latin-700-normal.woff2"
-TTF = ROOT / "assets/space-grotesk-700.ttf"
 OUT = ROOT / "assets/logo.png"
 
-S = 1024
-RADIUS = int(S * 0.235)
+S = 1024          # taille finale
+SS = S * 4        # taille de travail
+U = SS / 120      # une unité du dessin, en pixels de travail
 
-# couleurs (inspirées de l'app : violet → magenta)
-C1 = (109, 40, 217)    # #6d28d9
-C2 = (168, 85, 247)    # #a855f7
-C3 = (217, 70, 239)    # #d946ef
+TUILE = (109, 40, 217)        # #6d28d9
+REFLET = (124, 58, 237)       # #7c3aed
+ONDE_EXT = (196, 181, 253)    # #c4b5fd
+ONDE_INT = (233, 213, 255)    # #e9d5ff
+OMBRE = (76, 29, 149)         # #4c1d95
+POINT = (255, 255, 255)
 
 
-def lerp(a, b, t):
-    return tuple(round(a[i] + (b[i] - a[i]) * t) for i in range(3))
+def disque(d: ImageDraw.ImageDraw, cx, cy, r, fill):
+    d.ellipse([(cx - r) * U, (cy - r) * U, (cx + r) * U, (cy + r) * U], fill=fill)
 
 
-def grad(t):
-    return lerp(C1, C2, t * 2) if t < 0.5 else lerp(C2, C3, (t - 0.5) * 2)
+def anneau(d: ImageDraw.ImageDraw, cx, cy, r, w, fill):
+    """Anneau centré sur le rayon `r`, d'épaisseur `w` (Pillow trace vers l'intérieur)."""
+    e = r + w / 2
+    d.ellipse(
+        [(cx - e) * U, (cy - e) * U, (cx + e) * U, (cy + e) * U],
+        outline=fill,
+        width=round(w * U),
+    )
 
 
 def main():
     OUT.parent.mkdir(exist_ok=True)
-    # woff2 -> ttf
-    if not TTF.exists():
-        f = TTFont(str(WOFF2))
-        f.flavor = None
-        f.save(str(TTF))
 
-    # dégradé diagonal
-    base = Image.new("RGB", (S, S))
-    px = base.load()
-    for y in range(S):
-        for x in range(S):
-            px[x, y] = grad((x + y) / (2 * S))
+    dessin = Image.new("RGB", (SS, SS), TUILE)
+    d = ImageDraw.Draw(dessin)
 
-    # halo radial clair en haut-gauche
-    glow = Image.new("L", (S, S), 0)
-    gd = ImageDraw.Draw(glow)
-    gd.ellipse([-S * 0.3, -S * 0.4, S * 0.8, S * 0.7], fill=70)
-    base = Image.composite(Image.new("RGB", (S, S), (255, 255, 255)), base, glow.point(lambda v: v // 2))
+    # Reflet : une ellipse claire qui déborde du haut, coupée par la tuile.
+    d.ellipse([(60 - 92) * U, (-12 - 54) * U, (60 + 92) * U, (-12 + 54) * U], fill=REFLET)
 
-    # masque coins arrondis
-    mask = Image.new("L", (S, S), 0)
-    ImageDraw.Draw(mask).rounded_rectangle([0, 0, S - 1, S - 1], radius=RADIUS, fill=255)
+    anneau(d, 60, 60, 42, 4, ONDE_EXT)
+    anneau(d, 60, 60, 26, 7, ONDE_INT)
+    disque(d, 64, 65, 12, OMBRE)   # ombre décalée vers le bas-droite
+    disque(d, 60, 60, 12, POINT)
 
-    img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
-    img.paste(base, (0, 0), mask)
+    # Coins arrondis : 28 unités sur 120, comme la maquette.
+    masque = Image.new("L", (SS, SS), 0)
+    ImageDraw.Draw(masque).rounded_rectangle([0, 0, SS - 1, SS - 1], radius=round(28 * U), fill=255)
 
-    # liseré interne subtil
-    ImageDraw.Draw(img).rounded_rectangle(
-        [6, 6, S - 7, S - 7], radius=RADIUS - 6, outline=(255, 255, 255, 60), width=4
-    )
+    img = Image.new("RGBA", (SS, SS), (0, 0, 0, 0))
+    img.paste(dessin, (0, 0), masque)
 
-    # "R"
-    d = ImageDraw.Draw(img)
-    font = ImageFont.truetype(str(TTF), int(S * 0.62))
-    # ombre douce
-    d.text((S / 2, S / 2 + 8), "R", font=font, anchor="mm", fill=(60, 10, 90, 120))
-    d.text((S / 2, S / 2), "R", font=font, anchor="mm", fill=(255, 255, 255, 255))
-
-    img.save(OUT)
+    img.resize((S, S), Image.LANCZOS).save(OUT)
     print("logo ->", OUT)
 
 

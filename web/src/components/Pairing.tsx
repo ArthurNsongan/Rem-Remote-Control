@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Activity, ShieldCheck, Lock } from "lucide-react";
+import { ShieldCheck, Lock } from "lucide-react";
+import { RemMark } from "@shared/ui/rem-mark";
 import { Button } from "@shared/ui/button";
 import { pair, PairError, fetchPublic, type PublicInfo } from "../lib/socket";
 import ConnectionMode from "./ConnectionMode";
@@ -78,9 +79,7 @@ export default function Pairing({ onPaired }: { onPaired: () => void }) {
       <div className="pointer-events-none fixed -top-20 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-primary/30 blur-[120px]" />
 
       <div className="relative mb-10 flex flex-col items-center gap-3">
-        <div className="grid h-16 w-16 place-items-center rounded-3xl bg-gradient-to-br from-primary to-accent shadow-glow-lg">
-          <Activity className="h-8 w-8 text-white" />
-        </div>
+        <RemMark className="h-16 w-16 rounded-[15px] shadow-glow-lg" />
         <h1 className="font-display text-3xl tracking-widest glow-text">REM</h1>
         <p className="font-accent text-xs tracking-[0.3em] text-muted-foreground">
           REMOTE CONTROL
